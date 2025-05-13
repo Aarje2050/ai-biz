@@ -1,17 +1,16 @@
 /**
- * File: src/components/admin/pending-businesses.tsx
+ * File: src/components/admin/pending-businesses.tsx (FIXED)
  * 
- * Display pending business verification requests with quick action buttons
+ * Dashboard pending businesses component with working quick actions
  */
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui'
 import { Badge } from '@/components/ui'
+import { QuickActionButtons } from './quick-action-buttons-dashboard'
 import { 
   Eye, 
-  CheckCircle, 
-  XCircle, 
   Calendar,
   MapPin,
   Building
@@ -32,6 +31,8 @@ interface Business {
 export async function PendingBusinesses() {
   const supabase = createServerSupabaseClient()
 
+  console.log('PendingBusinesses: Attempting to fetch pending businesses...')
+
   // Fetch pending businesses (not verified and not rejected)
   const { data: businesses, error } = await supabase
     .from('businesses')
@@ -50,11 +51,14 @@ export async function PendingBusinesses() {
     .order('created_at', { ascending: false })
     .limit(10)
 
+  console.log('PendingBusinesses query result:', { businesses, error })
+
   if (error) {
     console.error('Error fetching pending businesses:', error)
     return (
-      <div className="text-muted-foreground">
-        Error loading pending businesses
+      <div className="text-center py-8 text-muted-foreground">
+        <p>Error loading pending businesses: {error.message}</p>
+        <pre className="text-xs mt-2 text-left">{JSON.stringify(error, null, 2)}</pre>
       </div>
     )
   }
@@ -72,7 +76,7 @@ export async function PendingBusinesses() {
     <div className="space-y-4">
       {businesses.map((business) => (
         <div key={business.id} className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-          {/* Business Logo */}
+          {/* Business Avatar */}
           <Avatar className="h-12 w-12">
             <AvatarImage src={business.logo_url || ''} alt={business.name} />
             <AvatarFallback>
@@ -116,14 +120,8 @@ export async function PendingBusinesses() {
               </Button>
             </Link>
             
-            {/* Quick approve/reject buttons (optional - could be in detail view) */}
-            <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50">
-              <CheckCircle className="h-4 w-4" />
-            </Button>
-            
-            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
-              <XCircle className="h-4 w-4" />
-            </Button>
+            {/* Quick Action Buttons Component */}
+            <QuickActionButtons businessId={business.id} businessName={business.name} />
           </div>
         </div>
       ))}

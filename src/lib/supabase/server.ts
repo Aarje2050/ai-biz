@@ -77,23 +77,86 @@ export async function getServerUser() {
   return session?.user ?? null
 }
 
+// File: src/lib/supabase/server.ts
+// Updated isAdmin function with better error handling and profile creation
+
 /**
  * Check if the current user is an admin
+ * Uses admin client to bypass RLS and avoid recursion
  */
 export async function isAdmin() {
-  const user = await getServerUser()
-  if (!user) return false
+  try {
+    // First get the current user from the regular client
+    const supabase = createServerSupabaseClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    console.log('Debug - Current user:', user?.id, user?.email)
+    
+    if (userError || !user) {
+      console.log('Debug - No user or error:', userError)
+      return false
+    }
 
-  const supabase = createServerSupabaseClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
+    // Use admin client to query profiles (bypasses RLS)
+    const adminClient = createSupabaseAdmin()
+    
+    // Check if profile exists using admin client
+    const { data: profile, error: profileError } = await adminClient
+      .from('profiles')
+      .select('is_admin, is_super_admin')
+      .eq('id', user.id)
+      .single()
+    
+    console.log('Debug - Profile data:', profile)
+    console.log('Debug - Profile error:', profileError)
+    
+    // If profile doesn't exist, create one
+    if (profileError && profileError.code === 'PGRST116') {
+      console.log('Debug - Profile not found, creating new profile')
+      
+      const { data: newProfile, error: createError } = await adminClient
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || null,
+          is_admin: false,
+          is_super_admin: false,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('is_admin, is_super_admin')
+        .single()
+      
+      if (createError) {
+        console.error('Debug - Error creating profile:', createError)
+        return false
+      }
+      
+      console.log('Debug - New profile created:', newProfile)
+      return newProfile?.is_admin || newProfile?.is_super_admin || false
+    }
+    
+    if (profileError) {
+      console.log('Debug - Profile error (not missing):', profileError)
+      return false
+    }
+    
+    if (!profile) {
+      console.log('Debug - No profile found')
+      return false
+    }
 
-  return profile?.is_admin === true
+    const isAdminUser = profile.is_admin || profile.is_super_admin
+    console.log('Debug - Is admin check result:', isAdminUser)
+    
+    return isAdminUser
+  } catch (error) {
+    console.error('Debug - isAdmin function error:', error)
+    return false
+  }
 }
-
 /**
  * Verify that a user owns a business
  */

@@ -1,7 +1,7 @@
 /**
- * File: src/components/admin/admin-stats.tsx
+ * File: src/components/admin/admin-stats.tsx (DEBUG VERSION)
  * 
- * Admin dashboard statistics cards showing platform metrics
+ * Admin dashboard statistics with better error handling
  */
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
@@ -9,11 +9,8 @@ import {
   Building, 
   Users, 
   Clock, 
-  CheckCircle, 
-  XCircle, 
-  TrendingUp,
-  Calendar,
-  Eye
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react'
 
 interface StatCardProps {
@@ -21,34 +18,30 @@ interface StatCardProps {
   value: string | number
   icon: any
   description: string
-  trend?: {
-    value: number
-    isPositive: boolean
-  }
+  error?: string
 }
 
-function StatCard({ title, value, icon: Icon, description, trend }: StatCardProps) {
+function StatCard({ title, value, icon: Icon, description, error }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">
           {title}
         </CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className={`h-4 w-4 ${error ? 'text-red-500' : 'text-muted-foreground'}`} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-          <span>{description}</span>
-          {trend && (
-            <div className={`flex items-center ${
-              trend.isPositive ? 'text-green-600' : 'text-red-600'
-            }`}>
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {trend.isPositive ? '+' : ''}{trend.value}%
-            </div>
-          )}
-        </div>
+        {error ? (
+          <div className="space-y-2">
+            <div className="text-xl font-bold text-red-500">Error</div>
+            <p className="text-xs text-red-600">{error}</p>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold">{value}</div>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </>
+        )}
       </CardContent>
     </Card>
   )
@@ -57,65 +50,90 @@ function StatCard({ title, value, icon: Icon, description, trend }: StatCardProp
 export async function AdminStats() {
   const supabase = createServerSupabaseClient()
 
-  // Fetch all statistics in parallel for better performance
-  const [
-    totalBusinessesResult,
-    pendingBusinessesResult,
-    verifiedBusinessesResult,
-    rejectedBusinessesResult,
-    totalUsersResult,
-    recentBusinessesResult
-  ] = await Promise.all([
-    // Total businesses
-    supabase
-      .from('businesses')
-      .select('id', { count: 'exact' }),
-    
-    // Pending businesses
-    supabase
+  // Initialize results
+  let totalBusinesses = 0
+  let pendingBusinesses = 0
+  let verifiedBusinesses = 0
+  let totalUsers = 0
+  let errors: Record<string, string> = {}
+
+  // Test each query separately for better error isolation
+  try {
+    console.log('AdminStats: Testing total businesses...')
+    const result = await supabase
       .from('businesses')
       .select('id', { count: 'exact' })
-      .eq('verified', false),
     
-    // Verified businesses
-    supabase
-      .from('businesses')
-      .select('id', { count: 'exact' })
-      .eq('verified', true),
-    
-    // Rejected businesses (you may need to add a 'rejected' field to your schema)
-    supabase
+    if (result.error) {
+      errors.totalBusinesses = result.error.message
+      console.error('Total businesses error:', result.error)
+    } else {
+      totalBusinesses = result.count || 0
+      console.log('Total businesses:', totalBusinesses)
+    }
+  } catch (error) {
+    errors.totalBusinesses = 'Database connection failed'
+    console.error('Total businesses error:', error)
+  }
+
+  try {
+    console.log('AdminStats: Testing pending businesses...')
+    const result = await supabase
       .from('businesses')
       .select('id', { count: 'exact' })
       .eq('verified', false)
-      .not('rejected_at', 'is', null),
+      .is('rejected_at', null)
     
-    // Total users
-    supabase
-      .from('profiles')
-      .select('id', { count: 'exact' }),
-    
-    // Businesses added in last 7 days (for trend calculation)
-    supabase
-      .from('businesses')
-      .select('id', { count: 'exact' })
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-  ])
-
-  // Calculate statistics
-  const totalBusinesses = totalBusinessesResult.count || 0
-  const pendingBusinesses = pendingBusinessesResult.count || 0
-  const verifiedBusinesses = verifiedBusinessesResult.count || 0
-  const rejectedBusinesses = rejectedBusinessesResult.count || 0
-  const totalUsers = totalUsersResult.count || 0
-  const recentBusinesses = recentBusinessesResult.count || 0
-
-  // Calculate trends (simplified - in production you'd compare with previous periods)
-  const businessTrend = {
-    value: Math.round((recentBusinesses / Math.max(totalBusinesses, 1)) * 100),
-    isPositive: recentBusinesses > 0
+    if (result.error) {
+      errors.pendingBusinesses = result.error.message
+      console.error('Pending businesses error:', result.error)
+    } else {
+      pendingBusinesses = result.count || 0
+      console.log('Pending businesses:', pendingBusinesses)
+    }
+  } catch (error) {
+    errors.pendingBusinesses = 'Query failed - check columns exist'
+    console.error('Pending businesses error:', error)
   }
 
+  try {
+    console.log('AdminStats: Testing verified businesses...')
+    const result = await supabase
+      .from('businesses')
+      .select('id', { count: 'exact' })
+      .eq('verified', true)
+    
+    if (result.error) {
+      errors.verifiedBusinesses = result.error.message
+      console.error('Verified businesses error:', result.error)
+    } else {
+      verifiedBusinesses = result.count || 0
+      console.log('Verified businesses:', verifiedBusinesses)
+    }
+  } catch (error) {
+    errors.verifiedBusinesses = 'Query failed - verified column missing?'
+    console.error('Verified businesses error:', error)
+  }
+
+  try {
+    console.log('AdminStats: Testing total users...')
+    const result = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact' })
+    
+    if (result.error) {
+      errors.totalUsers = result.error.message
+      console.error('Total users error:', result.error)
+    } else {
+      totalUsers = result.count || 0
+      console.log('Total users:', totalUsers)
+    }
+  } catch (error) {
+    errors.totalUsers = 'Profiles table access failed'
+    console.error('Total users error:', error)
+  }
+
+  // Calculate verification rate
   const verificationRate = totalBusinesses > 0 
     ? Math.round((verifiedBusinesses / totalBusinesses) * 100)
     : 0
@@ -124,31 +142,34 @@ export async function AdminStats() {
     <>
       <StatCard
         title="Total Businesses"
-        value={totalBusinesses}
+        value={errors.totalBusinesses ? 'Error' : totalBusinesses}
         icon={Building}
         description="All registered businesses"
-        trend={businessTrend}
+        error={errors.totalBusinesses}
       />
       
       <StatCard
         title="Pending Verification"
-        value={pendingBusinesses}
+        value={errors.pendingBusinesses ? 'Error' : pendingBusinesses}
         icon={Clock}
         description="Awaiting approval"
+        error={errors.pendingBusinesses}
       />
       
       <StatCard
         title="Verified Businesses"
-        value={verifiedBusinesses}
+        value={errors.verifiedBusinesses ? 'Error' : verifiedBusinesses}
         icon={CheckCircle}
         description={`${verificationRate}% verification rate`}
+        error={errors.verifiedBusinesses}
       />
       
       <StatCard
         title="Total Users"
-        value={totalUsers}
+        value={errors.totalUsers ? 'Error' : totalUsers}
         icon={Users}
         description="Registered users"
+        error={errors.totalUsers}
       />
     </>
   )

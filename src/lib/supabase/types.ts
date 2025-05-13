@@ -82,6 +82,9 @@ export interface Database {
             full_name: string | null
             avatar_url: string | null
             is_admin: boolean
+            is_super_admin: boolean
+            is_active: boolean
+            deactivated_at: string | null
             created_at: string
             updated_at: string
           }
@@ -91,6 +94,9 @@ export interface Database {
             full_name?: string | null
             avatar_url?: string | null
             is_admin?: boolean
+            is_super_admin?: boolean
+            is_active?: boolean
+            deactivated_at?: string | null
             created_at?: string
             updated_at?: string
           }
@@ -100,6 +106,9 @@ export interface Database {
             full_name?: string | null
             avatar_url?: string | null
             is_admin?: boolean
+            is_super_admin?: boolean
+            is_active?: boolean
+            deactivated_at?: string | null
             created_at?: string
             updated_at?: string
           }
