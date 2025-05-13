@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    
+    serverComponentsExternalPackages: ['@supabase/auth-helpers-nextjs']
   },
   images: {
     dangerouslyAllowSVG: true,

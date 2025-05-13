@@ -8,6 +8,9 @@ import { createServerSupabaseClient, isAdmin } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AdminBusinessForm } from '@/components/admin/admin-business-form'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function AdminEditBusinessPage({
   params
 }: {

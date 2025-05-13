@@ -14,6 +14,9 @@ import { VerificationHistory } from '@/components/admin/verification-history'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 interface Business {
   id: string
   name: string

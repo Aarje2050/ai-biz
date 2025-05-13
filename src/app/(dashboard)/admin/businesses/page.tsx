@@ -15,6 +15,9 @@ import { BusinessFilters } from '@/components/admin/business-filters'
 import { Building, Search, Filter } from 'lucide-react'
 import Link from 'next/link'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 interface SearchParams {
   status?: 'all' | 'pending' | 'verified' | 'rejected'
   category?: string

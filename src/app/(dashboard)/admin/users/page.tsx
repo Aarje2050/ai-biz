@@ -22,6 +22,9 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function UsersPage() {
   const supabase = createServerSupabaseClient()
 

@@ -1,9 +1,12 @@
 /**
  * File: src/app/(dashboard)/admin/page.tsx
  * 
- * Main admin dashboard page that imports the dashboard component
+ * Main admin dashboard page - Fixed for deployment
  */
 import AdminDashboardPage from '@/components/admin/admin-dashboard-page'
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 
 /**
  * Admin Dashboard Route

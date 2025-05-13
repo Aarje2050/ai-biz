@@ -5,13 +5,14 @@
  */
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { Button } from '@/components/ui'
 import { AlertTriangle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
-export default function AuthErrorPage() {
+function ErrorMessage() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
 
@@ -29,6 +30,14 @@ export default function AuthErrorPage() {
   }
 
   return (
+    <p className="text-center text-muted-foreground">
+      {getErrorMessage(error)}
+    </p>
+  )
+}
+
+export default function AuthErrorPage() {
+  return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
@@ -38,9 +47,9 @@ export default function AuthErrorPage() {
           <CardTitle className="text-xl">Authentication Error</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-center text-muted-foreground">
-            {getErrorMessage(error)}
-          </p>
+          <Suspense fallback={<div className="text-center text-muted-foreground">Loading...</div>}>
+            <ErrorMessage />
+          </Suspense>
           <div className="flex gap-2">
             <Button asChild variant="outline" className="flex-1">
               <Link href="/auth/signin">

@@ -8,6 +8,9 @@ import { BusinessList } from '@/components/admin/business-list'
 import { BusinessListSkeleton } from '@/components/admin/business-list-skeleton'
 import { CheckCircle, Shield } from 'lucide-react'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default function VerifiedBusinessesPage({ 
   searchParams 
 }: {

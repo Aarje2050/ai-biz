@@ -13,6 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui'
 import { Settings, Users, Shield, Cog } from 'lucide-react'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default async function AdminSettingsPage() {
   // Check admin permissions
   const adminCheck = await isAdmin()

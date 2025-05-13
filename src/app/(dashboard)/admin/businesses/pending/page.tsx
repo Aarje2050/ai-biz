@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { PendingBusinessesList } from '@/components/admin/pending-businesses-list'
 import { Clock, ArrowLeft, Filter } from 'lucide-react'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 export default async function PendingBusinessesPage() {
   // Check admin permissions
   const adminCheck = await isAdmin()
