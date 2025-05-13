@@ -1,10 +1,11 @@
 /**
- * File: src/components/ui/badge.tsx (Updated with success variant)
+ * File: src/components/ui/badge.tsx
  * 
- * Badge component with all variants including success
+ * Enhanced badge component with success variant
  */
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
+
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
