@@ -1,13 +1,12 @@
 /**
  * File: src/components/business/business-layout.tsx
  * 
- * Layout component for business pages with custom header
+ * Note: This component is now deprecated as we're using a single-page design
+ * The BusinessProfile component directly renders everything including the header
  */
 'use client'
 
-import { BusinessHeader } from './business-header'
 import { Footer } from '@/components/layout/footer'
-import { useEffect, useState } from 'react'
 
 interface Business {
   id: string
@@ -32,33 +31,9 @@ interface BusinessLayoutProps {
 }
 
 export function BusinessLayout({ business, children }: BusinessLayoutProps) {
-  const [currentSection, setCurrentSection] = useState('overview')
-  
-  // Detect current section based on scroll position
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = ['overview', 'hours', 'contact', 'gallery', 'chat']
-      const scrollPosition = window.scrollY + 200
-      
-      for (const section of sections) {
-        const element = document.getElementById(section)
-        if (element) {
-          const { offsetTop, offsetHeight } = element
-          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-            setCurrentSection(section)
-            break
-          }
-        }
-      }
-    }
-    
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-  
+  // This component is now simplified since BusinessProfile handles its own header
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <BusinessHeader business={business} currentSection={currentSection} />
       <main className="flex-1">{children}</main>
       <Footer />
     </div>

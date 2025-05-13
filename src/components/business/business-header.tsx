@@ -1,29 +1,18 @@
-/**
- * File: src/components/business/business-header.tsx
- * 
- * Business-specific header that replaces the main header on business pages
- */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui'
 import { Button } from '@/components/ui'
 import { Badge } from '@/components/ui'
 import { 
   Phone, 
   Mail, 
-  Globe, 
-  MapPin,
   Star,
   Menu,
   X,
-  Clock,
-  MessageCircle,
-  Share2,
-  BookOpen,
-  Calendar,
-  Camera,
-  Info
+  ChevronDown,
+  ExternalLink,
+  
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -45,83 +34,148 @@ interface Business {
   hours: any
 }
 
-interface BusinessHeaderProps {
-  business: Business
-  currentSection?: string
+interface NavigationItem {
+  id: string
+  label: string
+  href: string
 }
 
-export function BusinessHeader({ business, currentSection = 'overview' }: BusinessHeaderProps) {
+interface CTAItem {
+  id: string
+  label: string
+  icon: any
+  variant: 'default' | 'outline'
+}
+
+interface BusinessHeaderProps {
+  business: Business
+  currentSection: string
+  onSectionChange: (section: string) => void
+  navigation: NavigationItem[]
+  ctaItems: CTAItem[]
+  onCall: () => void
+  onWriteReview: () => void
+  isScrolled: boolean
+}
+
+export function BusinessHeader({ 
+  business, 
+  currentSection,
+  onSectionChange,
+  navigation,
+  ctaItems,
+  onCall,
+  onWriteReview,
+  isScrolled
+}: BusinessHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   
-  const navItems = [
-    { id: 'overview', label: 'Overview', icon: Info, href: '#overview' },
-    { id: 'hours', label: 'Hours', icon: Clock, href: '#hours' },
-    { id: 'contact', label: 'Contact', icon: Phone, href: '#contact' },
-    { id: 'gallery', label: 'Gallery', icon: Camera, href: '#gallery' },
-    { id: 'chat', label: 'Chat', icon: MessageCircle, href: '#chat', badge: business.ai_enabled },
-  ]
-  
-  // Get current status (open/closed)
+  // Get current status (simplified)
   const isCurrentlyOpen = () => {
-    // Simplified check - you can expand this logic
     const now = new Date()
     const currentHour = now.getHours()
-    return currentHour >= 9 && currentHour <= 18 // Basic 9-6 check
+    return currentHour >= 9 && currentHour <= 18
   }
   
+  // Handle CTA actions
+  const handleCTAClick = (itemId: string) => {
+    switch (itemId) {
+      case 'call':
+        onCall()
+        break
+      case 'review':
+        onWriteReview()
+        break
+      default:
+        break
+    }
+  }
+  
+  // Close mobile menu when section changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [currentSection])
+  
   return (
-    <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
-      {/* Top bar */}
-      <div className="bg-muted/30 py-2">
-        <div className="container mx-auto px-4 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-4">
-            {business.verified && (
-              <div className="flex items-center gap-1 text-green-600">
-                <Star className="w-3 h-3" />
-                <span>Verified Business</span>
-              </div>
-            )}
-            {isCurrentlyOpen() ? (
-              <Badge className="bg-green-500 text-white">Open Now</Badge>
-            ) : (
-              <Badge variant="outline">Closed</Badge>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {business.phone && (
-              <a href={`tel:${business.phone}`} className="flex items-center gap-1 hover:text-primary">
-                <Phone className="w-3 h-3" />
-                <span className="hidden sm:inline">{business.phone}</span>
-              </a>
-            )}
-            <Button size="sm" variant="ghost">
-              <Share2 className="w-4 h-4" />
-              <span className="hidden sm:inline ml-1">Share</span>
-            </Button>
+    <header className={cn(
+      'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+      isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white border-b'
+    )}>
+      {/* Top quick info bar (hidden on scroll) */}
+      <div className={cn(
+        'bg-gray-50 transition-all duration-300 overflow-hidden',
+        isScrolled ? 'h-0' : 'h-auto'
+      )}>
+        <div className="container max-w-7xl mx-auto px-4 py-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-4">
+              {business.verified && (
+                <div className="flex items-center gap-1 text-green-600">
+                  <Star className="w-3 h-3" />
+                  <span>Verified Business</span>
+                </div>
+              )}
+              <Badge 
+                variant={isCurrentlyOpen() ? 'default' : 'destructive'}
+                className="text-white"
+              >
+                {isCurrentlyOpen() ? 'Open Now' : 'Closed'}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {business.phone && (
+                <a 
+                  href={`tel:${business.phone}`} 
+                  className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                >
+                  <Phone className="w-3 h-3" />
+                  <span className="hidden sm:inline">{business.phone}</span>
+                </a>
+              )}
+              {business.email && (
+                <a 
+                  href={`mailto:${business.email}`} 
+                  className="flex items-center gap-1 hover:text-green-600 transition-colors"
+                >
+                  <Mail className="w-3 h-3" />
+                  <span className="hidden sm:inline">Email</span>
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>
       
       {/* Main header */}
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
           {/* Business branding */}
           <div className="flex items-center gap-4">
-            <Avatar className="w-12 h-12 md:w-16 md:h-16">
+            <Avatar className={cn(
+              'transition-all duration-300',
+              isScrolled ? 'w-10 h-10' : 'w-12 h-12'
+            )}>
               <AvatarImage src={business.logo_url || ''} alt={business.name} />
-              <AvatarFallback className="text-lg font-bold">
+              <AvatarFallback className="text-lg font-bold bg-blue-500 text-white">
                 {business.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             
             <div>
-              <h1 className="text-xl md:text-2xl font-bold">{business.name}</h1>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{business.category}</Badge>
+              <h1 className={cn(
+                'font-bold transition-all duration-300 text-gray-900',
+                isScrolled ? 'text-lg' : 'text-xl'
+              )}>
+                {business.name}
+              </h1>
+              <div className={cn(
+                'flex items-center gap-2 transition-all duration-300',
+                isScrolled ? 'hidden' : 'block'
+              )}>
+                <Badge variant="outline" className="text-xs">{business.category}</Badge>
                 {business.city && (
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
+                  <span className="text-sm text-gray-600">
                     {business.city}, {business.state}
                   </span>
                 )}
@@ -129,24 +183,62 @@ export function BusinessHeader({ business, currentSection = 'overview' }: Busine
             </div>
           </div>
           
-          {/* Primary actions - desktop */}
-          <div className="hidden md:flex items-center gap-2">
-            {business.phone && (
-              <Button size="lg">
-                <Phone className="w-4 h-4 mr-2" />
-                Call Now
-              </Button>
-            )}
-            {business.ai_enabled && (
-              <Button variant="outline" size="lg">
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Chat Now
-              </Button>
-            )}
-          </div>
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center">
+            <div className="flex items-center gap-1">
+              {navigation.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => onSectionChange(item.id)}
+                  className={cn(
+                    'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+                    currentSection === item.id 
+                      ? 'text-blue-600 bg-blue-50' 
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                  )}
+                >
+                  {item.label}
+                  {item.id === 'chat' && business.ai_enabled && (
+                    <div className="inline-block w-2 h-2 bg-green-500 rounded-full ml-2" />
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {/* Divider */}
+            <div className="w-px h-6 bg-gray-300 mx-4" />
+            
+            {/* CTA Buttons */}
+            <div className="flex items-center gap-2">
+              {ctaItems.map((item) => (
+                <Button
+                  key={item.id}
+                  onClick={() => handleCTAClick(item.id)}
+                  variant={item.variant}
+                  size="sm"
+                  className={cn(
+                    'flex items-center gap-2',
+                    item.variant === 'default' ? 'bg-blue-600 hover:bg-blue-700' : ''
+                  )}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          </nav>
           
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="lg:hidden flex items-center gap-2">
+            {/* Quick CTA for mobile */}
+            <Button
+              onClick={onCall}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Phone className="w-4 h-4" />
+            </Button>
+            
             <Button 
               variant="ghost" 
               size="sm"
@@ -158,71 +250,51 @@ export function BusinessHeader({ business, currentSection = 'overview' }: Busine
         </div>
       </div>
       
-      {/* Navigation */}
-      <div className="border-t bg-white/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4">
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex items-center gap-6 overflow-x-auto">
-            {navItems.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-2 py-3 px-4 text-sm font-medium border-b-2 border-transparent transition-colors whitespace-nowrap',
-                  currentSection === item.id 
-                    ? 'text-primary border-primary' 
-                    : 'text-muted-foreground hover:text-foreground hover:border-border'
-                )}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-                {item.badge && <div className="w-2 h-2 bg-primary rounded-full" />}
-              </Link>
-            ))}
-          </nav>
-          
-          {/* Mobile navigation */}
-          {isMobileMenuOpen && (
-            <nav className="md:hidden py-4 border-t">
-              <div className="space-y-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={cn(
-                      'flex items-center gap-3 py-3 px-4 rounded-lg text-sm font-medium transition-colors',
-                      currentSection === item.id 
-                        ? 'bg-primary/10 text-primary' 
-                        : 'text-muted-foreground hover:bg-muted'
-                    )}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    {item.label}
-                    {item.badge && <Badge className="text-xs px-2 py-1">New</Badge>}
-                  </Link>
-                ))}
-              </div>
-              
-              {/* Quick actions in mobile menu */}
-              <div className="pt-4 mt-4 border-t space-y-2">
-                {business.phone && (
-                  <Button className="w-full" size="lg">
-                    <Phone className="w-4 h-4 mr-2" />
-                    Call {business.name}
-                  </Button>
-                )}
-                {business.ai_enabled && (
-                  <Button variant="outline" className="w-full" size="lg">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Start Chat
-                  </Button>
-                )}
-              </div>
+      {/* Mobile Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden border-t bg-white/95 backdrop-blur-md shadow-lg">
+          <div className="container max-w-7xl mx-auto px-4 py-4">
+            <nav className="space-y-1">
+              {navigation.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => onSectionChange(item.id)}
+                  className={cn(
+                    'w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-between',
+                    currentSection === item.id 
+                      ? 'text-blue-600 bg-blue-50' 
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                  )}
+                >
+                  <span>{item.label}</span>
+                  {item.id === 'chat' && business.ai_enabled && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  )}
+                </button>
+              ))}
             </nav>
-          )}
+            
+            {/* Mobile CTA Buttons */}
+            <div className="pt-4 mt-4 border-t space-y-2">
+              {ctaItems.map((item) => (
+                <Button
+                  key={item.id}
+                  onClick={() => handleCTAClick(item.id)}
+                  variant={item.variant}
+                  size="lg"
+                  className={cn(
+                    'w-full flex items-center justify-center gap-2',
+                    item.variant === 'default' ? 'bg-blue-600 hover:bg-blue-700' : ''
+                  )}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </header>
   )
 }

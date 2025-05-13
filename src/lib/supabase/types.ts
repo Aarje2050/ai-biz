@@ -11,6 +11,7 @@ export interface Database {
             name: string
             slug: string
             description: string | null
+            tagline: string | null  // Add this
             category: string
             phone: string | null
             email: string | null
@@ -25,54 +26,65 @@ export interface Database {
             verified: boolean
             ai_enabled: boolean
             ai_prompt: string | null
+            social_media: any  // Add this
+            whatsapp_enabled: boolean  // Add this
+            status: string  // Add this
             created_at: string
             updated_at: string
           }
           Insert: {
-            id?: string
+            id: string
             user_id: string
             name: string
             slug: string
-            description?: string | null
+            description: string | null
+            tagline: string | null  // Add this
             category: string
-            phone?: string | null
-            email?: string | null
-            website?: string | null
-            address?: string | null
-            city?: string | null
-            state?: string | null
-            zip_code?: string | null
-            hours?: BusinessHours | null
-            images?: string[]
-            logo_url?: string | null
-            verified?: boolean
-            ai_enabled?: boolean
-            ai_prompt?: string | null
-            created_at?: string
-            updated_at?: string
+            phone: string | null
+            email: string | null
+            website: string | null
+            address: string | null
+            city: string | null
+            state: string | null
+            zip_code: string | null
+            hours: BusinessHours | null
+            images: string[]
+            logo_url: string | null
+            verified: boolean
+            ai_enabled: boolean
+            ai_prompt: string | null
+            social_media: any  // Add this
+            whatsapp_enabled: boolean  // Add this
+            status: string  // Add this
+            created_at: string
+            updated_at: string
           }
           Update: {
-            id?: string
-            user_id?: string
-            name?: string
-            slug?: string
-            description?: string | null
-            category?: string
-            phone?: string | null
-            email?: string | null
-            website?: string | null
-            address?: string | null
-            city?: string | null
-            state?: string | null
-            zip_code?: string | null
-            hours?: BusinessHours | null
-            images?: string[]
-            logo_url?: string | null
-            verified?: boolean
-            ai_enabled?: boolean
-            ai_prompt?: string | null
-            created_at?: string
-            updated_at?: string
+            id: string
+            user_id: string
+            name: string
+            slug: string
+            description: string | null
+            tagline: string | null  // Add this
+            category: string
+            phone: string | null
+            email: string | null
+            website: string | null
+            address: string | null
+            city: string | null
+            state: string | null
+            zip_code: string | null
+            hours: BusinessHours | null
+            images: string[]
+            logo_url: string | null
+            verified: boolean
+            ai_enabled: boolean
+            ai_prompt: string | null
+            social_media: any  // Add this
+            whatsapp_enabled: boolean  // Add this
+            status: string  // Add this
+            created_at: string
+            updated_at: string
           }
         }
         profiles: {
