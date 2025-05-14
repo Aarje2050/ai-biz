@@ -1,159 +1,144 @@
-import { Button } from '@/components/ui'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
-import Link from 'next/link'
-import { ArrowRight, Bot, MapPin, Search, Star, Users, Zap } from 'lucide-react'
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, TrendingUp, ArrowRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
+// Popular categories data
+const popularCategories = [
+  { name: 'Restaurants', icon: '🍽️', count: '2,500+', slug: 'restaurants' },
+  { name: 'Healthcare', icon: '🏥', count: '1,200+', slug: 'healthcare' },
+  { name: 'Professional Services', icon: '💼', count: '800+', slug: 'professional-services' },
+  { name: 'Home Services', icon: '🔧', count: '1,500+', slug: 'home-services' },
+  { name: 'Retail & Shopping', icon: '🛍️', count: '900+', slug: 'retail-shopping' },
+  { name: 'Beauty & Wellness', icon: '💆', count: '600+', slug: 'beauty-wellness' },
+];
+
+// Trending searches
+const trendingSearches = [
+  'Italian restaurants near me',
+  'Emergency dentist',
+  'Auto repair shops',
+  'Hair salons',
+  '24/7 pharmacies',
+  'Pizza delivery'
+];
 
 export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleTrendingClick = (query: string) => {
+    router.push(`/search?q=${encodeURIComponent(query)}`);
+  };
+
+  const handleCategoryClick = (slug: string) => {
+    router.push(`/categories/${slug}`);
+  };
+
   return (
-    <>
-      {/* Hero Section */}
-      <section className="gradient-bg py-20 lg:py-32">
-        <div className="container">
-          <div className="mx-auto max-w-4xl text-center">
-            <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Find Local Businesses with{' '}
-              <span className="text-primary">AI Assistance</span>
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground sm:text-xl">
-              Discover local businesses and get instant answers to your questions 
-              with our AI-powered directory. Each business has its own AI assistant 
-              ready to help.
-            </p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <Link href="/browse">
-                <Button size="lg" className="w-full sm:w-auto">
-                  Browse Businesses
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  List Your Business
-                </Button>
-              </Link>
+    <div className="min-h-screen bg-white">
+      
+
+      {/* Main Search Section */}
+      <main className="max-w-4xl mx-auto px-4 pt-20 pb-12">
+        <div className="text-center mb-12">
+          <h2 className="text-5xl font-bold text-gray-900 mb-4">
+            Find Local Businesses
+          </h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Discover verified businesses with AI-powered search
+          </p>
+
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Search for restaurants, services, doctors..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
+                className="w-full pl-11 pr-4 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-blue-500 focus:ring-0"
+              />
+            </div>
+            <div className="mt-6 flex justify-center">
+              <Button 
+                onClick={handleSearch}
+                disabled={!searchQuery.trim()}
+                size="lg"
+                className="px-8 rounded-full"
+              >
+                Search Businesses
+              </Button>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="py-20">
-        <div className="container">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="mb-4 text-3xl font-bold">Why Choose Our Directory?</h2>
-            <p className="mb-12 text-muted-foreground">
-              We're revolutionizing how customers connect with businesses using AI technology.
-            </p>
+        {/* Trending Searches */}
+        <div className="mb-16">
+          <div className="flex items-center justify-center mb-6">
+            <TrendingUp className="w-5 h-5 text-gray-500 mr-2" />
+            <span className="text-sm font-medium text-gray-500">Trending Searches</span>
           </div>
-          
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <Bot className="h-10 w-10 text-primary" />
-                <CardTitle>AI-Powered Assistance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Each business has its own AI assistant that can answer questions about 
-                  services, hours, pricing, and more in real-time.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <MapPin className="h-10 w-10 text-primary" />
-                <CardTitle>Local Discovery</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Find businesses near you with our smart location-based search. 
-                  Discover hidden gems in your neighborhood.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Star className="h-10 w-10 text-primary" />
-                <CardTitle>Verified Listings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  All businesses are verified for authenticity. Trust that you're 
-                  getting accurate information every time.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Search className="h-10 w-10 text-primary" />
-                <CardTitle>Smart Search</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Our intelligent search understands natural language queries and 
-                  finds exactly what you're looking for.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Zap className="h-10 w-10 text-primary" />
-                <CardTitle>Instant Responses</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Get immediate answers to your questions without waiting for 
-                  business owners to respond. Available 24/7.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Users className="h-10 w-10 text-primary" />
-                <CardTitle>Growing Community</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Join thousands of businesses and customers who are already 
-                  part of our AI-powered directory.
-                </CardDescription>
-              </CardContent>
-            </Card>
+          <div className="flex flex-wrap justify-center gap-3">
+            {trendingSearches.map((search, index) => (
+              <button
+                key={index}
+                onClick={() => handleTrendingClick(search)}
+                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors text-gray-700"
+              >
+                {search}
+              </button>
+            ))}
           </div>
         </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="border-t bg-muted/50 py-20">
-        <div className="container">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-4 text-3xl font-bold">
-              Ready to Get Started?
-            </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Whether you're looking for businesses or want to list your own, 
-              we'll help you connect with AI assistance.
-            </p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <Link href="/browse">
-                <Button size="lg" variant="default">
-                  Find Businesses
-                </Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button size="lg" variant="outline">
-                  List Your Business
-                </Button>
-              </Link>
-            </div>
+        {/* Popular Categories */}
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900 text-center mb-8">
+            Popular Categories
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {popularCategories.map((category) => (
+              <Card 
+                key={category.slug}
+                className="hover:shadow-md transition-shadow cursor-pointer group"
+                onClick={() => handleCategoryClick(category.slug)}
+              >
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl mb-3">{category.icon}</div>
+                  <h4 className="font-semibold text-gray-900 mb-1">{category.name}</h4>
+                  <p className="text-sm text-gray-600 mb-3">{category.count} businesses</p>
+                  <ArrowRight className="w-4 h-4 mx-auto text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
-      </section>
-    </>
-  )
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t bg-gray-50 mt-16">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center text-gray-600">
+            <p>&copy; 2024 AI Business Directory. Find and connect with local businesses.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }

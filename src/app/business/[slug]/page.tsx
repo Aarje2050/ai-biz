@@ -7,6 +7,8 @@ import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { BusinessProfile } from './business-profile'
 
+
+
 // Force dynamic rendering for real-time data
 export const dynamic = 'force-dynamic'
 
@@ -40,21 +42,43 @@ export default async function BusinessPage({
 }) {
   const supabase = createServerSupabaseClient()
   
-  const { data: business, error } = await supabase
-    .from('businesses')
-    .select('*')
-    .eq('slug', params.slug)
-    .eq('verified', true)
-    .single()
+  console.log('Looking for business with slug:', params.slug);
+  
+// In src/app/business/[slug]/page.tsx
+const { data: business, error } = await supabase
+  .from('businesses')
+  .select(`
+    *,
+    rating,
+    review_count
+  `)
+  .eq('slug', params.slug)
+  .eq('verified', true)
+  .single()
+  
+  console.log('Query result:', { business, error });
+  
+  if (error) {
+    console.error('Database error:', error);
+    console.error('Error details:', error.details, error.message, error.code);
+  }
+  
+  if (!business) {
+    console.log('No business found with slug:', params.slug);
+    console.log('Available businesses (for debugging):');
+    
+    // Debug query - check what businesses exist
+    const { data: allBusinesses } = await supabase
+      .from('businesses')
+      .select('slug, name, verified')
+      .limit(5);
+    
+    console.log('Sample businesses:', allBusinesses);
+  }
   
   if (error || !business) {
-    console.error('Business not found:', error)
     notFound()
   }
   
   return <BusinessProfile business={business} />
-}
-
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  // ... (keep existing metadata generation code)
 }

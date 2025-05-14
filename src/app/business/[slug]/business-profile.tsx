@@ -6,6 +6,8 @@ import { BusinessHeader } from '@/components/business/business-header'
 import { AIAgent } from '@/components/business/ai-agent'
 import { BusinessDetails } from '@/components/business/business-details'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
+import { BusinessReviewsSection } from '@/app/business/[slug]/business-reviews-section';
+
 import { Button } from '@/components/ui'
 import { Badge } from '@/components/ui'
 import { Separator } from '@/components/ui'
@@ -60,6 +62,9 @@ interface BusinessProfileProps {
             status: string  // Add this
             created_at: string
             updated_at: string
+            // Make these optional with default handling
+    rating?: number
+    review_count?: number
   }
 }
 
@@ -156,8 +161,11 @@ useEffect(() => {
 
   // Handle review writing (placeholder)
   const handleWriteReview = () => {
-    // In a real app, this would open a review modal or redirect to a review platform
-    alert('Review functionality coming soon!')
+    // Scroll to reviews section
+    handleNavigate('reviews');
+    
+    // Optional: Trigger the review modal
+    // You can pass a callback to BusinessReviewsSection to trigger the modal
   }
 
   return (
@@ -215,20 +223,28 @@ useEffect(() => {
             </p>
             
             {/* Quick Info */}
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-              {business.city && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span>{business.city}, {business.state}</span>
-                </div>
-              )}
-              {business.ai_enabled && (
-                <div className="flex items-center gap-1">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span>AI Assistant Available</span>
-                </div>
-              )}
-            </div>
+            {/* // In business-profile.tsx, update the Quick Info section (around line 180) */}
+<div className="flex flex-wrap gap-4 text-sm text-gray-600">
+  {business.city && (
+    <div className="flex items-center gap-1">
+      <MapPin className="w-4 h-4 text-gray-400" />
+      <span>{business.city}, {business.state}</span>
+    </div>
+  )}
+  {business.ai_enabled && (
+    <div className="flex items-center gap-1">
+      <Sparkles className="w-4 h-4 text-blue-500" />
+      <span>AI Assistant Available</span>
+    </div>
+  )}
+  {/* Add review info with optional handling */}
+  {(business.review_count || 0) > 0 && (
+    <div className="flex items-center gap-1">
+      <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+      <span>{business.rating || 0} ({business.review_count || 0} reviews)</span>
+    </div>
+  )}
+</div>
           </div>
         </div>
 
@@ -358,6 +374,7 @@ useEffect(() => {
             />
           </div>
         </div>
+
       </section>
 
       {/* Contact Section */}
@@ -459,6 +476,17 @@ useEffect(() => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Reviews Section */}
+<section 
+  id="reviews" 
+  ref={(el) => { sectionsRef.current.reviews = el }}
+  className="py-12 bg-white"
+>
+  <div className="container max-w-7xl mx-auto px-4">
+    <BusinessReviewsSection business={business} />
+  </div>
+</section>
 
               {/* Map Placeholder */}
               {fullAddress && (

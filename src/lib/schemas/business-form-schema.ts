@@ -120,19 +120,19 @@ export const enhancedBusinessSchema = z.object({
   images: z.instanceof(FileList).optional(),
   
   // Additional Information
-  tags: z.array(z.string()).default([]),
-  amenities: z.array(z.string()).default([]),
-  payment_methods: z.array(z.string()).default([]),
-  languages_spoken: z.array(z.string()).default([]),
+//   tags: z.array(z.string()).default([]),
+//   amenities: z.array(z.string()).default([]),
+//   payment_methods: z.array(z.string()).default([]),
+//   languages_spoken: z.array(z.string()).default([]),
   
-  // SEO (optional for advanced users)
-  meta_title: z.string()
-    .max(60, 'Meta title should be under 60 characters')
-    .optional(),
-  meta_description: z.string()
-    .max(160, 'Meta description should be under 160 characters')
-    .optional(),
-  keywords: z.array(z.string()).default([]),
+//   // SEO (optional for advanced users)
+//   meta_title: z.string()
+//     .max(60, 'Meta title should be under 60 characters')
+//     .optional(),
+//   meta_description: z.string()
+//     .max(160, 'Meta description should be under 160 characters')
+//     .optional(),
+//   keywords: z.array(z.string()).default([]),
   
   // AI Configuration
   ai_prompt: z.string()
@@ -235,54 +235,54 @@ export const validateBusinessForm = (data: EnhancedBusinessFormData, businessTyp
 }
 
 // Transform form data to business creation format
+// Find this function and update it:
 export const transformFormToBusinessData = (formData: EnhancedBusinessFormData) => {
-  const {
-    logoFile,
-    images,
-    mondayHours,
-    tuesdayHours,
-    wednesdayHours,
-    thursdayHours,
-    fridayHours,
-    saturdayHours,
-    sundayHours,
-    whatsapp_enabled,
-    facebook,
-    instagram,
-    twitter,
-    linkedin,
-    youtube,
-    zipCode,
-    ...rest
-  } = formData
-
-  // Transform hours to business_hours object
-  const business_hours = {
-    monday: mondayHours || null,
-    tuesday: tuesdayHours || null,
-    wednesday: wednesdayHours || null,
-    thursday: thursdayHours || null,
-    friday: fridayHours || null,
-    saturday: saturdayHours || null,
-    sunday: sundayHours || null,
+    const {
+      logoFile,
+      images,
+      mondayHours,
+      tuesdayHours,
+      wednesdayHours,
+      thursdayHours,
+      fridayHours,
+      saturdayHours,
+      sundayHours,
+      whatsapp_enabled,
+      facebook,
+      instagram,
+      twitter,
+      linkedin,
+      youtube,
+      zipCode,
+      ...rest
+    } = formData
+  
+    // Change this: business_hours to hours
+    const hours = {
+      monday: mondayHours || null,
+      tuesday: tuesdayHours || null,
+      wednesday: wednesdayHours || null,
+      thursday: thursdayHours || null,
+      friday: fridayHours || null,
+      saturday: saturdayHours || null,
+      sunday: sundayHours || null,
+    }
+  
+    // Transform social media links
+    const social_media = {
+      facebook: facebook || null,
+      instagram: instagram || null,
+      twitter: twitter || null,
+      linkedin: linkedin || null,
+      youtube: youtube || null,
+    }
+  
+    return {
+      ...rest,
+      hours, // Change this from business_hours to hours
+      social_media,
+      postal_code: formData.postal_code || zipCode || null,
+      whatsapp_enabled: whatsapp_enabled || false,
+    }
   }
-
-  // Transform social media links
-  const social_media = {
-    facebook: facebook || null,
-    instagram: instagram || null,
-    twitter: twitter || null,
-    linkedin: linkedin || null,
-    youtube: youtube || null,
-  }
-
-  return {
-    ...rest,
-    business_hours,
-    social_media,
-    postal_code: formData.postal_code || zipCode || null,
-    whatsapp_enabled: whatsapp_enabled || false,
-  }
-}
-
 export default enhancedBusinessSchema
