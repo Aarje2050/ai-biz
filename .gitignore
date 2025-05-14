@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#project-related
+
+/PROJECT_CONTEXT.md
+/schema.sql
+/ai-reviews.sql
+/bookings-orders.sql
+/core-schema.sql
+/jobs-products.sql
+/payments-analytics.sql
+/views-final-setup.sql
+
+/setup-project-structure.sh
+/ROADMAP.md
+/temp.txt
