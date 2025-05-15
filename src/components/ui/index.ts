@@ -9,6 +9,7 @@ export { Input } from './input'
 export { Label } from './label'
 export { Textarea } from './textarea'
 export { Toaster } from './toaster'
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './accordion'
 
 // Admin dashboard components
 export { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from './sheet'
