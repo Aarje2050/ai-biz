@@ -38,6 +38,12 @@ const navItems: NavItem[] = [
     description: 'Overview and stats'
   },
   {
+    title: 'Draft Businesses', // Add this before Pending
+    href: '/admin/businesses/drafts',
+    icon: FileText,
+    description: 'Draft business listings'
+  },
+  {
     title: 'Pending Verification',
     href: '/admin/businesses/pending',
     icon: Clock,

@@ -1,64 +1,42 @@
-/**
- * File: src/app/auth/error/page.tsx
- * 
- * Auth error page for handling authentication errors
- */
 'use client'
 
-import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
-import { Button } from '@/components/ui'
-import { AlertTriangle, ArrowLeft } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
-function ErrorMessage() {
+export default function AuthError() {
   const searchParams = useSearchParams()
-  const error = searchParams.get('error')
-
-  const getErrorMessage = (error: string | null) => {
-    switch (error) {
-      case 'access_denied':
-        return 'Access was denied. You may have cancelled the sign-in process.'
-      case 'server_error':
-        return 'A server error occurred. Please try again later.'
-      case 'temporarily_unavailable':
-        return 'The service is temporarily unavailable. Please try again later.'
-      default:
-        return error || 'An unknown error occurred during authentication.'
-    }
-  }
+  const message = searchParams.get('message') || 'An authentication error occurred'
 
   return (
-    <p className="text-center text-muted-foreground">
-      {getErrorMessage(error)}
-    </p>
-  )
-}
-
-export default function AuthErrorPage() {
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">      
+  <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+          <div className="flex justify-center mb-4">
+            <AlertTriangle className="h-12 w-12 text-red-500" />
           </div>
-          <CardTitle className="text-xl">Authentication Error</CardTitle>
+          <CardTitle className="text-red-600">Authentication Error</CardTitle>
+          <CardDescription>{message}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Suspense fallback={<div className="text-center text-muted-foreground">Loading...</div>}>
-            <ErrorMessage />
-          </Suspense>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" className="flex-1">
+          <div className="text-center space-y-2">
+            <p className="text-sm text-gray-600">
+              Please try signing in again. If the problem persists, contact support.
+            </p>
+          </div>
+          
+          <div className="flex flex-col space-y-2">
+            <Button asChild>
               <Link href="/auth/signin">
-                <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Sign In
               </Link>
             </Button>
-            <Button asChild className="flex-1">
-              <Link href="/">Go Home</Link>
+            <Button variant="outline" asChild>
+              <Link href="/">
+                Go to Homepage
+              </Link>
             </Button>
           </div>
         </CardContent>

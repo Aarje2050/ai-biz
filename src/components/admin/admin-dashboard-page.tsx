@@ -20,18 +20,14 @@ import { Shield, Users, Building, Clock } from 'lucide-react'
  * Security: Only accessible by users with admin privileges
  */
 export default async function AdminDashboardPage() {
-  console.log('AdminDashboardPage: Starting admin check...')
   
   // Check if the current user has admin privileges
   const adminCheck = await isAdmin()
-  console.log('AdminDashboardPage: Admin check result:', adminCheck)
   
   if (!adminCheck) {
-    console.log('AdminDashboardPage: Redirecting to dashboard')
     redirect('/dashboard')
   }
 
-  console.log('AdminDashboardPage: Admin check passed, rendering admin content')
 
   return (
     <div className="space-y-8 p-6">

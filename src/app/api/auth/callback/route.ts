@@ -1,16 +1,13 @@
-/**
- * File: src/app/api/auth/callback/route.ts
- * 
- * Auth callback handler for Supabase authentication
- */
+import { NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/lib/supabase/types'
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get('code')
+  const { searchParams } = requestUrl
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
     const cookieStore = cookies()
@@ -20,43 +17,20 @@ export async function GET(request: NextRequest) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
       
       if (error) {
-        console.error('Auth callback error:', error)
-        return NextResponse.redirect(`${requestUrl.origin}/auth/error?error=${encodeURIComponent(error.message)}`)
+        console.error('Error exchanging code for session:', error)
+        return NextResponse.redirect(new URL('/auth/error?message=Authentication failed', request.url))
       }
-
-      // If user signs in successfully, create or update their profile
-      if (data.user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', data.user.id)
-          .single()
-
-        // If profile doesn't exist, create one
-        if (profileError && profileError.code === 'PGRST116') {
-          await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              email: data.user.email || '',
-              full_name: data.user.user_metadata?.full_name || null,
-              is_admin: false,
-              is_super_admin: false,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-        }
+      
+      if (data.session) {
+        // Successful authentication - redirect to dashboard or specified next URL
+        return NextResponse.redirect(new URL(next, request.url))
       }
-
-      // Redirect to dashboard or home page
-      return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
     } catch (error) {
-      console.error('Unexpected auth callback error:', error)
-      return NextResponse.redirect(`${requestUrl.origin}/auth/error?error=unexpected_error`)
+      console.error('Unexpected error during auth callback:', error)
+      return NextResponse.redirect(new URL('/auth/error?message=Unexpected error occurred', request.url))
     }
   }
 
-  // If no code parameter, redirect to sign in
-  return NextResponse.redirect(`${requestUrl.origin}/auth/signin`)
+  // If no code or authentication failed, redirect to sign in
+  return NextResponse.redirect(new URL('/auth/signin', request.url))
 }

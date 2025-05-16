@@ -82,6 +82,12 @@ export function Header() {
             >
               Categories
             </Link>
+            <Link
+              href="/dashboard/businesses/new"
+              className="text-foreground/60 transition-colors hover:text-foreground"
+            >
+              Add business
+            </Link>
           </nav>
         </div>
 
@@ -106,7 +112,10 @@ export function Header() {
                 <Button>Sign Up</Button>
               </Link>
             </div>
-          )}
+            
+          )
+          
+          }
         </div>
       </div>
     </header>

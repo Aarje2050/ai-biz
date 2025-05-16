@@ -1,8 +1,8 @@
 /**
  * ================================================================
  * FILE: /src/lib/schemas/business-form-schema.ts
- * PURPOSE: Enhanced Zod schema for business form validation
- * STATUS: ✅ Complete - matches comprehensive database
+ * PURPOSE: Enhanced Zod schema for business form validation (SSR-Safe)
+ * STATUS: ✅ Fixed for SSR compatibility
  * ================================================================
  */
 
@@ -54,7 +54,7 @@ const hoursSchema = z.string().refine((hours) => {
   return hoursRegex.test(hours.trim())
 }, { message: 'Please use format: 9:00 AM - 5:00 PM, 9:00-17:00, Closed, 24/7, or By Appointment' })
 
-// Enhanced business form schema
+// Enhanced business form schema (SSR-Safe)
 export const enhancedBusinessSchema = z.object({
   // Basic Information
   name: z.string()
@@ -115,24 +115,9 @@ export const enhancedBusinessSchema = z.object({
   saturdayHours: hoursSchema.optional(),
   sundayHours: hoursSchema.optional(),
   
-  // File Uploads
-  logoFile: z.instanceof(FileList).optional(),
-  images: z.instanceof(FileList).optional(),
-  
-  // Additional Information
-//   tags: z.array(z.string()).default([]),
-//   amenities: z.array(z.string()).default([]),
-//   payment_methods: z.array(z.string()).default([]),
-//   languages_spoken: z.array(z.string()).default([]),
-  
-//   // SEO (optional for advanced users)
-//   meta_title: z.string()
-//     .max(60, 'Meta title should be under 60 characters')
-//     .optional(),
-//   meta_description: z.string()
-//     .max(160, 'Meta description should be under 160 characters')
-//     .optional(),
-//   keywords: z.array(z.string()).default([]),
+  // File Uploads - SSR-Safe version
+  logoFile: z.any().optional(), // Changed from z.instanceof(FileList)
+  images: z.any().optional(),   // Changed from z.instanceof(FileList)
   
   // AI Configuration
   ai_prompt: z.string()
@@ -235,7 +220,6 @@ export const validateBusinessForm = (data: EnhancedBusinessFormData, businessTyp
 }
 
 // Transform form data to business creation format
-// Find this function and update it:
 export const transformFormToBusinessData = (formData: EnhancedBusinessFormData) => {
     const {
       logoFile,
@@ -285,4 +269,5 @@ export const transformFormToBusinessData = (formData: EnhancedBusinessFormData) 
       whatsapp_enabled: whatsapp_enabled || false,
     }
   }
+
 export default enhancedBusinessSchema

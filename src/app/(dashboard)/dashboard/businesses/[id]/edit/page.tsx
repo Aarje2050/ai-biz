@@ -1,66 +1,84 @@
+
+
+
 /**
- * File: src/app/(dashboard)/dashboard/businesses/[id]/edit/page.tsx (PROPERLY FIXED)
+ * File: src/app/(dashboard)/admin/businesses/[id]/edit/page.tsx
  * 
- * Fix the business edit page - handle the error properly
+ * Admin page for editing business information
  */
 import { notFound } from 'next/navigation'
-import { createServerSupabaseClient, getServerUser } from '@/lib/supabase/server'
+import { createServerSupabaseClient, isAdmin } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { BusinessForm } from '@/components/forms/business-form'
-import { Database } from '@/lib/supabase/types'
+import { BusinessFormEdit } from '@/components/admin/business-form-edit'
 
-type Business = Database['public']['Tables']['businesses']['Row']
-
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 
 export default async function EditBusinessPage({
   params
 }: {
   params: { id: string }
 }) {
-  const user = await getServerUser()
-  
-  if (!user) {
-    redirect('/auth/signin')
+  // Check admin permissions
+  const adminCheck = await isAdmin()
+  if (!adminCheck) {
+    redirect('/dashboard')
   }
 
   const supabase = createServerSupabaseClient()
 
-  const { data, error } = await supabase
-  .from('businesses')
-  .select('*')
-  .eq('id', params.id)
-  .eq('user_id', user.id)
-  .single()
+  // Fetch business details first (without profiles to avoid foreign key issue)
+  const { data: business, error } = await supabase
+    .from('businesses')
+    .select('*')
+    .eq('id', params.id)
+    .single()
 
-const business = data as Business | null
-
-
-  // Check for error first
-  if (error) {
+  if (error || !business) {
     console.error('Error fetching business:', error)
     notFound()
   }
 
-  // Check if business exists (data could be null)
-  if (!business) {
-    console.error('Business not found')
-    notFound()
+  // Fetch the profile separately using the user_id
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', business.user_id)
+    .single()
+
+  // Combine the data
+  const businessWithProfile = {
+    ...business,
+    profiles: profile || { full_name: null, email: 'Unknown' }
   }
 
-  // At this point, business is guaranteed to be the correct type
-  // because we've handled the error cases above
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Edit Business</h1>
           <p className="text-muted-foreground">
-            Update your business information
+            Make changes to {business.name} before verification
           </p>
         </div>
       </div>
-      
-      <BusinessForm business={business} />
+
+      <BusinessFormEdit business={businessWithProfile} />
     </div>
   )
+}
+
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const supabase = createServerSupabaseClient()
+  
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('name')
+    .eq('id', params.id)
+    .single()
+
+  return {
+    title: business?.name ? `Edit: ${business.name}` : 'Edit Business',
+    description: 'Admin edit page for business information',
+  }
 }

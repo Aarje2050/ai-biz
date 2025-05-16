@@ -59,7 +59,6 @@ export async function AdminStats() {
 
   // Test each query separately for better error isolation
   try {
-    console.log('AdminStats: Testing total businesses...')
     const result = await supabase
       .from('businesses')
       .select('id', { count: 'exact' })
@@ -69,7 +68,6 @@ export async function AdminStats() {
       console.error('Total businesses error:', result.error)
     } else {
       totalBusinesses = result.count || 0
-      console.log('Total businesses:', totalBusinesses)
     }
   } catch (error) {
     errors.totalBusinesses = 'Database connection failed'
@@ -77,7 +75,6 @@ export async function AdminStats() {
   }
 
   try {
-    console.log('AdminStats: Testing pending businesses...')
     const result = await supabase
       .from('businesses')
       .select('id', { count: 'exact' })
@@ -89,7 +86,6 @@ export async function AdminStats() {
       console.error('Pending businesses error:', result.error)
     } else {
       pendingBusinesses = result.count || 0
-      console.log('Pending businesses:', pendingBusinesses)
     }
   } catch (error) {
     errors.pendingBusinesses = 'Query failed - check columns exist'
@@ -97,7 +93,6 @@ export async function AdminStats() {
   }
 
   try {
-    console.log('AdminStats: Testing verified businesses...')
     const result = await supabase
       .from('businesses')
       .select('id', { count: 'exact' })
@@ -108,7 +103,6 @@ export async function AdminStats() {
       console.error('Verified businesses error:', result.error)
     } else {
       verifiedBusinesses = result.count || 0
-      console.log('Verified businesses:', verifiedBusinesses)
     }
   } catch (error) {
     errors.verifiedBusinesses = 'Query failed - verified column missing?'
@@ -116,7 +110,6 @@ export async function AdminStats() {
   }
 
   try {
-    console.log('AdminStats: Testing total users...')
     const result = await supabase
       .from('profiles')
       .select('id', { count: 'exact' })
@@ -126,7 +119,6 @@ export async function AdminStats() {
       console.error('Total users error:', result.error)
     } else {
       totalUsers = result.count || 0
-      console.log('Total users:', totalUsers)
     }
   } catch (error) {
     errors.totalUsers = 'Profiles table access failed'

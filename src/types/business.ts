@@ -10,7 +10,7 @@
 export type BusinessType = 'service' | 'store' | 'restaurant' | 'professional'
 
 // Business status enum (matches database)
-export type BusinessStatus = 'pending' | 'active' | 'suspended' | 'rejected'
+export type BusinessStatus = 'draft'|'pending' | 'active' | 'suspended' | 'rejected'
 
 // Verification status enum (matches database)
 export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'requires_update'

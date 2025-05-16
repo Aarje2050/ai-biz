@@ -4,6 +4,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { PlanSelection } from '@/components/payments/plan-selection'
+import { useSubscription } from '@/hooks/use-subscription'
+import { useBusinessDraft } from '@/hooks/use-business-draft';
+import { Save } from 'lucide-react';
 
 import {
   Button,
@@ -247,24 +251,47 @@ const initialSteps: FormStep[] = [
     isComplete: false,
     isRequired: false,
     fields: []
+  },
+  {
+    id: "plan",
+    title: "Choose Your Plan",
+    description: "Select the right plan for your business",
+    isComplete: false,
+    isRequired: true,
+    fields: ["selected_plan"]
   }
 ];
 
 export function BusinessForm({ business }: BusinessFormProps) {
-  const [steps, setSteps] = useState<FormStep[]>(initialSteps);
-  const [currentStep, setCurrentStep] = useState<string>("type");
-  const [selectedType, setSelectedType] = useState<BusinessType>("service");
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [imagesPreviews, setImagesPreviews] = useState<string[]>([]);
-  
-  const logoFileRef = useRef<HTMLInputElement>(null);
-  const imagesFileRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const supabase = createClientComponentClient<Database>();
-  // In your main component, fix the isLastStep logic
-const isLastStep = currentStep === steps[steps.length - 1]?.id;
+  const [selectedPlan, setSelectedPlan] = useState<string>('free');
+  const {
+    draftSaved,
+    autoSaving,
+    lastSaved,
+    currentBusinessId,
+    debouncedSave,
+    manualSave
+  } = useBusinessDraft(business?.id);
 
+  
+  // Fix 1: Get businessId from business prop or generate temp id
+  const businessId = business?.id; // Don't create temp ID
+  const { createSubscription, loading: subscriptionLoading } = useSubscription(businessId);
+
+
+const [steps, setSteps] = useState<FormStep[]>(initialSteps);
+const [currentStep, setCurrentStep] = useState<string>("type");
+const [selectedType, setSelectedType] = useState<BusinessType>("service");
+const [logoPreview, setLogoPreview] = useState<string | null>(null);
+const [imagesPreviews, setImagesPreviews] = useState<string[]>([]);
+
+const logoFileRef = useRef<HTMLInputElement>(null);
+const imagesFileRef = useRef<HTMLInputElement>(null);
+const router = useRouter();
+const [formLoading, setFormLoading] = useState(false); // Changed from 'loading' to 'formLoading'
+const supabase = createClientComponentClient<Database>();
+  // In your main component, fix the isLastStep logic
+  const isLastStep = currentStep === steps[steps.length - 1]?.id;
   // Helper functions
   
   const getBusinessValue = (key: string, fallback: any = null) => {
@@ -301,47 +328,46 @@ const updateStepRequirements = (businessType: BusinessType) => {
   })));
 };
 
-  const validateStep = (stepId: string): boolean => {
-    const formData = form.getValues();
+  // Also update the validation logic to include plan step:
+const validateStep = (stepId: string): boolean => {
+  const formData = form.getValues();
+  
+  switch (stepId) {
+    case 'type':
+      return !!formData.business_type;
     
-    switch (stepId) {
-      case 'type':
-        return !!formData.business_type;
-      
-      case 'basic':
-        return !!(formData.name?.trim() && 
-                 formData.tagline?.trim() && 
-                 formData.description?.trim() && 
-                 formData.category);
-      
-      case 'contact':
-        return !!(formData.phone?.trim() || formData.email?.trim());
-      
-      case 'location':
-        if (['restaurant', 'store'].includes(selectedType)) {
-          return !!(formData.address?.trim() && formData.city?.trim());
-        }
-        return true;
-      
-      case 'hours':
-        if (['restaurant', 'store'].includes(selectedType)) {
-          const hours = [
-            formData.mondayHours,
-            formData.tuesdayHours,
-            formData.wednesdayHours,
-            formData.thursdayHours,
-            formData.fridayHours,
-            formData.saturdayHours,
-            formData.sundayHours
-          ];
-          return hours.some(h => h?.trim());
-        }
-        return true;
-      
-      default:
-        return true;
-    }
-  };
+    case 'basic':
+      return !!(formData.name?.trim() && 
+               formData.tagline?.trim() && 
+               formData.description?.trim() && 
+               formData.category);
+    
+    case 'contact':
+      return !!(formData.phone?.trim() || formData.email?.trim());
+    
+    case 'location':
+      if (['restaurant', 'store'].includes(selectedType)) {
+        return !!(formData.address?.trim() && formData.city?.trim());
+      }
+      return true;
+    
+    case 'hours':
+      if (['restaurant', 'store'].includes(selectedType)) {
+        const hours = [
+          formData.mondayHours, formData.tuesdayHours, formData.wednesdayHours,
+          formData.thursdayHours, formData.fridayHours, formData.saturdayHours, formData.sundayHours
+        ];
+        return hours.some(h => h?.trim());
+      }
+      return true;
+    
+    case 'plan':
+      return !!selectedPlan; // Plan must be selected
+    
+    default:
+      return true;
+  }
+};
 
 
 
@@ -527,116 +553,7 @@ const businessTypeConfig = {
   const suggestedCategories = getSuggestedCategories(selectedType);
   const allCategories = MAIN_CATEGORIES;
 
-  // Form submission
-  // const onSubmit = async (data: EnhancedBusinessFormData) => {
-  //   setLoading(true);
-
-  //   try {
-  //     const {
-  //       data: { user },
-  //     } = await supabase.auth.getUser();
-
-  //     if (!user) {
-  //       toast.error("You must be logged in to perform this action");
-  //       return;
-  //     }
-
-  //     // Transform form data to match database schema
-  //     const businessData = transformFormToBusinessData(data);
-
-  //     // Handle file uploads (simplified for now)
-  //     let logoUrl = getBusinessValue('logo_url', null);
-  //     let imageUrls: string[] = getBusinessValue('images', []);
-
-  //     // Upload logo if provided
-  //     if (data.logoFile && data.logoFile.length > 0) {
-  //       const logoFile = data.logoFile[0];
-  //       const logoPath = `${user.id}/logo-${Date.now()}-${logoFile.name}`;
-
-  //       const { error: logoError } = await supabase.storage
-  //         .from("business-media")
-  //         .upload(logoPath, logoFile);
-
-  //       if (logoError) throw logoError;
-
-  //       const { data: logoPublic } = supabase.storage
-  //         .from("business-media")
-  //         .getPublicUrl(logoPath);
-
-  //       logoUrl = logoPublic.publicUrl;
-  //     }
-
-  //     // Upload gallery images if provided
-  //     if (data.images && data.images.length > 0) {
-  //       const filesArray = Array.from(data.images);
-
-  //       const uploadPromises = filesArray.map(async (file, index) => {
-  //         const imagePath = `${user.id}/gallery-${Date.now()}-${index}-${file.name}`;
-
-  //         const { error: imageError } = await supabase.storage
-  //           .from("business-media")
-  //           .upload(imagePath, file);
-
-  //         if (imageError) throw imageError;
-
-  //         const { data: imagePublic } = supabase.storage
-  //           .from("business-media")
-  //           .getPublicUrl(imagePath);
-
-  //         return imagePublic.publicUrl;
-  //       });
-
-  //       imageUrls = await Promise.all(uploadPromises);
-  //     }
-
-  //     const slug = getBusinessValue('slug', null) || generateSlug(data.name);
-
-  //     const finalBusinessData = {
-  //       ...businessData,
-  //       owner_id: user.id,
-  //       slug,
-  //       logo_url: logoUrl,
-  //       images: imageUrls,
-  //     };
-
-  //     if (business) {
-  //       // Update existing business
-  //       const { error } = await supabase
-  //         .from("businesses")
-  //         .update({
-  //           ...finalBusinessData,
-  //           status: getBusinessValue('status', 'pending'), // Keep existing status
-  //         })
-  //         .eq("id", business.id);
-
-  //       if (error) throw error;
-
-  //       toast.success("Business updated successfully!");
-  //       router.push(`/dashboard/businesses/${business.id}`);
-  //     } else {
-  //       // Create new business
-  //       const { error } = await supabase
-  //         .from("businesses")
-  //         .insert(finalBusinessData);
-
-  //       if (error) throw error;
-
-  //       toast.success(
-  //         "Your business listing has been submitted for review. You'll receive a notification once it's approved."
-  //       );
-  //       router.push("/dashboard");
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Error saving business:", error);
-  //     toast.error(
-  //       error.message || "An error occurred while saving the business"
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
- 
+  
 
   // Field requirements component
   const FieldRequirements = ({ businessType }: { businessType: BusinessType }) => {
@@ -677,6 +594,8 @@ const businessTypeConfig = {
         return renderBusinessHoursStep();
       case 'media':
         return renderMediaStep();
+      case 'plan':
+        return renderPlanStep();
       default:
         return null;
     }
@@ -1261,6 +1180,8 @@ const businessTypeConfig = {
     </div>
   );
 
+
+
   // AI Assistant Step (optional - can be added later)
   const renderAIStep = () => (
     <div className="space-y-6">
@@ -1314,33 +1235,38 @@ const businessTypeConfig = {
     </div>
   );
 
+ // Update the renderPlanStep function:
+ const renderPlanStep = () => (
+  <PlanSelection
+    businessId={business?.id}
+    onPlanSelect={(planId, planName) => {
+      setSelectedPlan(planId);
+      // Don't automatically mark as complete - let user proceed manually
+      
+      // If premium is selected, just store the selection
+      if (planName === 'premium') {
+        // Store the plan selection but don't trigger payment yet
+        console.log('Premium plan selected, will handle payment on final submit');
+      }
+    }}
+    loading={subscriptionLoading || formLoading}
+  />
+);
 
-
-
-// Add auto-save functionality that saves draft without submitting
-const [draftSaved, setDraftSaved] = useState(false);
-
-const saveDraft = useCallback(async () => {
-  const formData = form.getValues();
-  // Save to localStorage as draft
-  localStorage.setItem('business-form-draft', JSON.stringify(formData));
-  setDraftSaved(true);
-  setTimeout(() => setDraftSaved(false), 2000);
-}, [form]);
-
-// Auto-save every 30 seconds
+// Watch form changes and auto-save
 useEffect(() => {
-  const interval = setInterval(saveDraft, 30000);
-  return () => clearInterval(interval);
-}, [saveDraft]);
+  const subscription = form.watch((values) => {
+    if (Object.keys(form.formState.dirtyFields).length > 0) {
+      debouncedSave(values as EnhancedBusinessFormData);
+    }
+  });
+  return () => subscription.unsubscribe();
+}, [form, debouncedSave]);
 
-// Show draft saved indicator
-{draftSaved && (
-  <div className="text-green-600 text-sm">Draft saved ✓</div>
-)}
- // Form submission logic ( New )
+ // Update the form submission logic:
+
  const onSubmit = async (data: EnhancedBusinessFormData) => {
-  setLoading(true);
+  setFormLoading(true);
 
   try {
     const {
@@ -1377,9 +1303,11 @@ useEffect(() => {
       logoUrl = logoPublic.publicUrl;
     }
 
+    
+
     // Upload gallery images if provided
     if (data.images && data.images.length > 0) {
-      const filesArray = Array.from(data.images);
+      const filesArray = Array.from(data.images) as File[];
 
       const uploadPromises = filesArray.map(async (file, index) => {
         const imagePath = `${user.id}/gallery-${Date.now()}-${index}-${file.name}`;
@@ -1410,43 +1338,167 @@ useEffect(() => {
       images: imageUrls,
     };
 
+    let businessRecord;
+
+    // Use currentBusinessId if available (for drafts)
+    const businessToUpdate = business || { id: currentBusinessId };
+    
+    if (businessToUpdate?.id) {
+      // Update existing business/draft
+      const { data: updatedBusiness, error } = await supabase
+        .from("businesses")
+        .update({
+          ...finalBusinessData,
+          status: 'pending', // Change from draft to pending on submit
+        })
+        .eq("id", businessToUpdate.id)
+        .select()
+        .single();
+      }
+
     if (business) {
       // Update existing business
-      const { error } = await supabase
+      const { data: updatedBusiness, error } = await supabase
         .from("businesses")
         .update({
           ...finalBusinessData,
           status: getBusinessValue('status', 'pending'),
         })
-        .eq("id", business.id);
+        .eq("id", business.id)
+        .select()
+        .single();
 
       if (error) throw error;
-
-      toast.success("Business updated successfully!");
-      router.push(`/dashboard/businesses/${business.id}`);
+      businessRecord = updatedBusiness;
     } else {
       // Create new business
-      const { error } = await supabase
+      const { data: newBusiness, error } = await supabase
         .from("businesses")
-        .insert(finalBusinessData);
+        .insert(finalBusinessData)
+        .select()
+        .single();
 
       if (error) throw error;
-
-      toast.success(
-        "Your business listing has been submitted for review. You'll receive a notification once it's approved."
-      );
-      router.push("/dashboard");
+      businessRecord = newBusiness;
     }
+
+    // Handle plan subscription AFTER business is created
+    if (selectedPlan === 'premium' && businessRecord.id) {
+      const { data: premiumPlan } = await supabase
+        .from('plans')
+        .select('id')
+        .eq('name', 'premium')
+        .single();
+
+      if (premiumPlan) {
+        try {
+          const response = await fetch('/api/payments/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              business_id: businessRecord.id,
+              plan_id: premiumPlan.id,
+              billing_cycle: 'monthly'
+            })
+          });
+
+          const result = await response.json();
+
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to create subscription');
+          }
+
+          // Check if payment is required
+          if (result.order_id && result.amount) {
+            // Don't redirect yet - wait for payment
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => {
+              const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: result.amount,
+                currency: result.currency,
+                order_id: result.order_id,
+                name: 'AI Business Directory',
+                description: `Premium Plan - ${result.business_name}`,
+                prefill: {
+                  name: result.business_name,
+                },
+                handler: async (response: any) => {
+                  try {
+                    const verifyResponse = await fetch('/api/payments/verify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        payment_id: response.razorpay_payment_id,
+                        order_id: response.razorpay_order_id,
+                        signature: response.razorpay_signature,
+                        subscription_id: result.subscription_id
+                      })
+                    });
+
+                    const verifyResult = await verifyResponse.json();
+                    
+                    if (verifyResult.success) {
+                      toast.success("Business created and payment completed! Your listing is under review.");
+                    } else {
+                      toast.error("Payment verification failed");
+                    }
+                  } catch (error) {
+                    toast.error("Payment completed but verification failed");
+                  }
+                  
+                  // Always redirect to dashboard after payment
+                  router.push('/dashboard');
+                },
+                modal: {
+                  ondismiss: () => {
+                    toast.error("Payment cancelled. Your business has been created and is under review.");
+                    router.push('/dashboard');
+                  }
+                },
+                theme: {
+                  color: '#3B82F6'
+                }
+              };
+
+              const rzp = new (window as any).Razorpay(options);
+              rzp.open();
+            };
+            
+            script.onerror = () => {
+              toast.error("Failed to load payment gateway");
+              router.push('/dashboard');
+            };
+            
+            document.body.appendChild(script);
+            
+            // Exit here to prevent immediate redirect
+            setFormLoading(false);
+            return;
+            
+          } else if (result.trial) {
+            toast.success(`Business created with premium trial! Your listing is under review.`);
+          } else {
+            toast.success("Premium business created successfully! Your listing is under review.");
+          }
+        } catch (subscriptionError: any) {
+          toast.error(`Business created but subscription failed: ${subscriptionError.message}`);
+        }
+      }
+    } else {
+      toast.success("Your business listing has been submitted for review. You'll receive a notification once it's approved.");
+    }
+
+    // Always redirect to dashboard (not to business detail page)
+    router.push('/dashboard');
+
   } catch (error: any) {
-    console.error("Error saving business:", error);
-    toast.error(
-      error.message || "An error occurred while saving the business"
-    );
+    toast.error(error.message || "An error occurred while saving the business");
   } finally {
-    setLoading(false);
+    setFormLoading(false);
   }
 };
-
 // Main component return
 return (
   <div className="container max-w-4xl mx-auto py-8 px-4">
@@ -1464,22 +1516,54 @@ return (
         <CardTitle className="text-center">
           {business ? "Edit Business" : "Create Your Business Listing"}
         </CardTitle>
-      </CardHeader>
+        <div className="flex items-center gap-3">
+        {autoSaving && (
+          <span className="text-sm text-blue-600 flex items-center gap-1">
+            <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            Saving...
+          </span>
+        )}
+        
+        {draftSaved && (
+          <span className="text-sm text-green-600">✓ Draft saved</span>
+        )}
+        
+        {lastSaved && (
+          <span className="text-xs text-gray-500">
+            {lastSaved.toLocaleTimeString()}
+          </span>
+        )}
+        
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => manualSave(form.getValues())}
+          disabled={autoSaving}
+          className="flex items-center gap-1"
+        >
+          <Save className="w-4 h-4" />
+          Save Draft
+        </Button>
+      </div>
+  
+  </CardHeader>
+
       <CardContent>
         <form className="space-y-6">
           {/* Render current step content */}
           {renderStepContent()}
 
           {/* // And update how you call StepNavigation */}
-<StepNavigation
+          <StepNavigation
   onPrevious={goToPreviousStep}
   onNext={goToNextStep}
-  onSubmit={() => form.handleSubmit(onSubmit)()} // Fix: Call form submit properly
+  onSubmit={() => form.handleSubmit(onSubmit)()}
   canGoNext={validateStep(currentStep)}
   isFirstStep={currentStep === steps[0]?.id}
   isLastStep={isLastStep}
-  loading={loading}
-  currentStep={currentStep} // Add this prop
+  loading={formLoading} // Changed from loading to formLoading
+  currentStep={currentStep}
 />
         </form>
       </CardContent>

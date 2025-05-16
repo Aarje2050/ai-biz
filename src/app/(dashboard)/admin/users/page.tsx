@@ -63,14 +63,14 @@ const userIds = profiles.map(p => p.id)
 
 const { data: businessCounts } = await supabase
   .from('businesses')
-  .select('user_id')
-  .in('user_id', userIds)
+  .select('owner_id')
+  .in('owner_id', userIds)
 
 // Count businesses per user
 const businessCountMap = new Map()
 businessCounts?.forEach(business => {
-  const count = businessCountMap.get(business.user_id) || 0
-  businessCountMap.set(business.user_id, count + 1)
+  const count = businessCountMap.get(business.owner_id) || 0
+  businessCountMap.set(business.owner_id, count + 1)
 })
 
 // Add business counts to users
