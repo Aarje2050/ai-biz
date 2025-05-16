@@ -1,121 +1,111 @@
+/**
+ * FILE: /src/components/layout/header.tsx
+ * PURPOSE: Header with sticky search bar (appears on scroll)
+ */
+
 'use client'
 
+import { useState, useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui'
-import { supabase } from '@/lib/supabase'
-import { useEffect, useState } from 'react'
-import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import { Search, User, Menu } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export function Header() {
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-
+  const pathname = usePathname()
+  
+  // Show search bar when scrolled down on homepage
   useEffect(() => {
-    if (!supabase) {
-      console.log('Supabase client not available')
-      setLoading(false)
-      return
-    }
-
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error('Error getting session:', error)
-        } else {
-          setUser(session?.user ?? null)
-        }
-      } catch (error) {
-        console.error('Error in getInitialSession:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    getInitialSession()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
-        console.log('Auth state changed:', event, session)
-        setUser(session?.user ?? null)
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const handleSignOut = async () => {
-    if (!supabase) return
+    if (pathname !== '/') return
     
-    try {
-      await supabase.auth.signOut()
-      router.refresh()
-    } catch (error) {
-      console.error('Error signing out:', error)
+    const handleScroll = () => {
+      const scrolled = window.scrollY > 300 // Show after hero section
+      setShowSearch(scrolled)
     }
+    
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [pathname])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!searchQuery.trim()) return
+    
+    router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+    setSearchQuery('')
   }
 
+  const isSearchPage = pathname === '/search'
+  const isHomePage = pathname === '/'
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-full bg-primary" />
-            <span className="font-bold text-xl">BiZ Directory</span>
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center">
+            <span className="text-xl font-bold text-gray-900">
+              AI Business Directory
+            </span>
           </Link>
-          
-          <nav className="hidden md:flex items-center space-x-4">
-            <Link
-              href="/browse"
-              className="text-foreground/60 transition-colors hover:text-foreground"
+
+          {/* Sticky Search Bar (Homepage only, when scrolled) */}
+          {isHomePage && showSearch && (
+            <div className="flex-1 max-w-lg mx-8">
+              <form onSubmit={handleSearch}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search businesses..."
+                    className="pl-10 h-10 border-gray-300 rounded-full"
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full"
+                  >
+                    Search
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link 
+              href="/browse" 
+              className="text-gray-600 hover:text-gray-900 transition-colors"
             >
               Browse
             </Link>
-            <Link
-              href="/categories"
-              className="text-foreground/60 transition-colors hover:text-foreground"
+            <Link 
+              href="/categories" 
+              className="text-gray-600 hover:text-gray-900 transition-colors"
             >
               Categories
             </Link>
-            <Link
-              href="/dashboard/businesses/new"
-              className="text-foreground/60 transition-colors hover:text-foreground"
-            >
-              Add business
-            </Link>
+            <Button variant="outline" size="sm">
+              <User className="w-4 h-4 mr-2" />
+              Sign In
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/dashboard/businesses/new">
+                List Business
+              </Link>
+            </Button>
           </nav>
-        </div>
 
-        <div className="flex items-center space-x-4">
-          {loading ? (
-            <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
-          ) : user ? (
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard">
-                <Button variant="ghost">Dashboard</Button>
-              </Link>
-              <Button onClick={handleSignOut} variant="outline">
-                Sign Out
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <Link href="/auth/signin">
-                <Button variant="ghost">Sign In</Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button>Sign Up</Button>
-              </Link>
-            </div>
-            
-          )
-          
-          }
+          {/* Mobile Menu */}
+          <Button variant="ghost" size="sm" className="md:hidden">
+            <Menu className="w-5 h-5" />
+          </Button>
         </div>
       </div>
     </header>

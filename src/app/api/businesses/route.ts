@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { generateSlug } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/client'
 
 export async function GET(request: NextRequest) {
@@ -77,6 +78,42 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Helper function to generate unique slug
+async function generateUniqueSlug(supabase: any, baseName: string, excludeId?: string): Promise<string> {
+  let slug = generateSlug(baseName);
+  let counter = 0;
+  
+  while (true) {
+    const testSlug = counter === 0 ? slug : `${slug}-${counter}`;
+    
+    // Check if slug exists (exclude current business if updating)
+    let query = supabase
+      .from('businesses')
+      .select('id')
+      .eq('slug', testSlug);
+    
+    if (excludeId) {
+      query = query.neq('id', excludeId);
+    }
+    
+    const { data } = await query.single();
+    
+    // If no existing business found, this slug is available
+    if (!data) {
+      return testSlug;
+    }
+    
+    counter++;
+    
+    // Safety check to prevent infinite loop
+    if (counter > 100) {
+      return `${slug}-${Date.now()}`;
+    }
+  }
+}
+
+// Replace the POST function in /api/businesses/route.ts:
+
 export async function POST(request: NextRequest) {
   const cookieStore = cookies()
   const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
@@ -102,18 +139,53 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Create business
+    // Generate unique slug
+    const uniqueSlug = await generateUniqueSlug(supabase, body.name);
+    
+    // Create business with unique slug
     const { data: business, error } = await supabase
       .from('businesses')
       .insert({
         ...body,
-        user_id: session.user.id,
+        owner_id: session.user.id,
+        slug: uniqueSlug,
+        // Use the status from body, default to pending if not provided
+        status: body.status || 'pending',
       })
       .select()
       .single()
     
     if (error) {
       console.error('Error creating business:', error)
+      
+      // If still a slug conflict, try again with timestamp
+      if (error.code === '23505' && error.message.includes('businesses_slug_key')) {
+        const timestampSlug = `${generateSlug(body.name)}-${Date.now()}`;
+        
+        const { data: retryBusiness, error: retryError } = await supabase
+          .from('businesses')
+          .insert({
+            ...body,
+            owner_id: session.user.id,
+            slug: timestampSlug,
+            status: body.status || 'pending',
+          })
+          .select()
+          .single()
+          
+        if (retryError) {
+          return NextResponse.json(
+            { success: false, error: 'Failed to create business' },
+            { status: 500 }
+          )
+        }
+        
+        return NextResponse.json({
+          success: true,
+          data: retryBusiness,
+        })
+      }
+      
       return NextResponse.json(
         { success: false, error: 'Failed to create business' },
         { status: 500 }

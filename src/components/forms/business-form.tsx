@@ -1256,16 +1256,21 @@ const businessTypeConfig = {
 // Watch form changes and auto-save
 useEffect(() => {
   const subscription = form.watch((values) => {
-    if (Object.keys(form.formState.dirtyFields).length > 0) {
-      debouncedSave(values as EnhancedBusinessFormData);
+    // Only auto-save if business name exists and it's a real change
+    if (values.name && Object.keys(form.formState.dirtyFields).length > 0) {
+      // Don't auto-save when creating a new business (no business.id)
+      // This prevents duplicate slug generation
+      if (business?.id) {
+        debouncedSave(values as EnhancedBusinessFormData);
+      }
     }
   });
   return () => subscription.unsubscribe();
-}, [form, debouncedSave]);
+}, [form, debouncedSave, business?.id]);
 
- // Update the form submission logic:
+// Replace the onSubmit function in business-form.tsx with this fixed version:
 
- const onSubmit = async (data: EnhancedBusinessFormData) => {
+const onSubmit = async (data: EnhancedBusinessFormData) => {
   setFormLoading(true);
 
   try {
@@ -1303,8 +1308,6 @@ useEffect(() => {
       logoUrl = logoPublic.publicUrl;
     }
 
-    
-
     // Upload gallery images if provided
     if (data.images && data.images.length > 0) {
       const filesArray = Array.from(data.images) as File[];
@@ -1328,41 +1331,41 @@ useEffect(() => {
       imageUrls = await Promise.all(uploadPromises);
     }
 
-    const slug = getBusinessValue('slug', null) || generateSlug(data.name);
-
+    // Prepare final business data
     const finalBusinessData = {
       ...businessData,
       owner_id: user.id,
-      slug,
       logo_url: logoUrl,
       images: imageUrls,
     };
 
     let businessRecord;
 
-    // Use currentBusinessId if available (for drafts)
-    const businessToUpdate = business || { id: currentBusinessId };
-    
-    if (businessToUpdate?.id) {
-      // Update existing business/draft
+    // Check if we have a draft saved by auto-save
+    if (currentBusinessId && !business?.id) {
+      // We have a draft (from auto-save), convert it to pending
+      console.log('Converting draft to pending business:', currentBusinessId);
+      
       const { data: updatedBusiness, error } = await supabase
         .from("businesses")
         .update({
           ...finalBusinessData,
-          status: 'pending', // Change from draft to pending on submit
+          status: 'pending', // Convert draft to pending
         })
-        .eq("id", businessToUpdate.id)
+        .eq("id", currentBusinessId)
         .select()
         .single();
-      }
 
-    if (business) {
-      // Update existing business
+      if (error) throw error;
+      businessRecord = updatedBusiness;
+
+    } else if (business?.id) {
+      // Update existing business (editing mode)
       const { data: updatedBusiness, error } = await supabase
         .from("businesses")
         .update({
           ...finalBusinessData,
-          status: getBusinessValue('status', 'pending'),
+          status: business.status === 'draft' ? 'pending' : business.status,
         })
         .eq("id", business.id)
         .select()
@@ -1370,16 +1373,27 @@ useEffect(() => {
 
       if (error) throw error;
       businessRecord = updatedBusiness;
+      
     } else {
-      // Create new business
-      const { data: newBusiness, error } = await supabase
-        .from("businesses")
-        .insert(finalBusinessData)
-        .select()
-        .single();
+      // Create new business through API (no draft exists)
+      const response = await fetch('/api/businesses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...finalBusinessData,
+          status: 'pending', // Create directly as pending
+        }),
+      });
 
-      if (error) throw error;
-      businessRecord = newBusiness;
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create business');
+      }
+
+      businessRecord = result.data;
     }
 
     // Handle plan subscription AFTER business is created
@@ -1408,9 +1422,8 @@ useEffect(() => {
             throw new Error(result.error || 'Failed to create subscription');
           }
 
-          // Check if payment is required
+          // Payment handling logic (same as before)
           if (result.order_id && result.amount) {
-            // Don't redirect yet - wait for payment
             const script = document.createElement('script');
             script.src = 'https://checkout.razorpay.com/v1/checkout.js';
             script.onload = () => {
@@ -1448,7 +1461,6 @@ useEffect(() => {
                     toast.error("Payment completed but verification failed");
                   }
                   
-                  // Always redirect to dashboard after payment
                   router.push('/dashboard');
                 },
                 modal: {
@@ -1473,7 +1485,6 @@ useEffect(() => {
             
             document.body.appendChild(script);
             
-            // Exit here to prevent immediate redirect
             setFormLoading(false);
             return;
             
@@ -1490,10 +1501,11 @@ useEffect(() => {
       toast.success("Your business listing has been submitted for review. You'll receive a notification once it's approved.");
     }
 
-    // Always redirect to dashboard (not to business detail page)
+    // Always redirect to dashboard
     router.push('/dashboard');
 
   } catch (error: any) {
+    console.error('Business submission error:', error);
     toast.error(error.message || "An error occurred while saving the business");
   } finally {
     setFormLoading(false);

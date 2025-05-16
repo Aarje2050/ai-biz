@@ -42,7 +42,6 @@ export default async function BusinessPage({
 }) {
   const supabase = createServerSupabaseClient()
   
-  console.log('Looking for business with slug:', params.slug);
   
 // In src/app/business/[slug]/page.tsx
 const { data: business, error } = await supabase
@@ -56,16 +55,13 @@ const { data: business, error } = await supabase
   .eq('verified', true)
   .single()
   
-  console.log('Query result:', { business, error });
   
   if (error) {
-    console.error('Database error:', error);
-    console.error('Error details:', error.details, error.message, error.code);
+   
   }
   
   if (!business) {
-    console.log('No business found with slug:', params.slug);
-    console.log('Available businesses (for debugging):');
+    
     
     // Debug query - check what businesses exist
     const { data: allBusinesses } = await supabase
@@ -73,7 +69,7 @@ const { data: business, error } = await supabase
       .select('slug, name, verified')
       .limit(5);
     
-    console.log('Sample businesses:', allBusinesses);
+   
   }
   
   if (error || !business) {

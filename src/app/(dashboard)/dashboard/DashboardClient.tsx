@@ -65,15 +65,15 @@ export default function DashboardClient({ initialData }: DashboardProps) {
   const rejectedCount = businesses.filter(b => b.status === 'rejected').length
 
   const getStatusBadge = (business: any) => {
-    if (business.status === 'draft') {
-      return { label: 'Draft', variant: 'outline', icon: CheckCircle }  
-    }
+  
     if (business.verified) {
       return { label: 'Live', variant: 'success', icon: CheckCircle }
     }
     switch (business.status) {
+      case 'draft':
+        return { label: 'Draft', variant: 'success', icon: CheckCircle }
       case 'pending':
-        return { label: 'Under Review', variant: 'warning', icon: Clock }
+        return { label: 'Under review', variant: 'warning', icon: Clock }
       case 'rejected':
         return { label: 'Rejected', variant: 'destructive', icon: XCircle }
       case 'suspended':

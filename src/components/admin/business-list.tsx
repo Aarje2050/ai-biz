@@ -46,7 +46,7 @@ interface Business {
   updated_at: string
   logo_url: string | null
   description: string | null
-  user_id: string
+  owner_id: string
   profiles: {
     email: string
     full_name: string | null
@@ -75,21 +75,22 @@ export async function BusinessList({ searchParams }: { searchParams: SearchParam
       updated_at,
       logo_url,
       description,
-      user_id
+      owner_id
     `)
   
   // Apply status filter
   if (searchParams.status && searchParams.status !== 'all') {
     switch (searchParams.status) {
+     
       case 'pending':
         query = query.eq('verified', false).is('rejected_at', null)
         break
       case 'verified':
         query = query.eq('verified', true)
         break
-      case 'rejected':
-        query = query.not('rejected_at', 'is', null)
-        break
+        case 'rejected':
+          query = query.eq('status', 'rejected')
+          break
     }
   }
   
@@ -150,7 +151,7 @@ export async function BusinessList({ searchParams }: { searchParams: SearchParam
     let businesses: Business[] = []
     if (rawBusinesses && rawBusinesses.length > 0) {
       // Get all user IDs
-      const userIds = rawBusinesses.map(business => business.user_id)
+      const userIds = rawBusinesses.map(business => business.owner_id)
       
       // Fetch profiles for these users
       const { data: profiles } = await supabase
@@ -167,7 +168,7 @@ export async function BusinessList({ searchParams }: { searchParams: SearchParam
       // Combine businesses with profiles
       businesses = rawBusinesses.map(business => ({
         ...business,
-        profiles: profileLookup.get(business.user_id) || { email: '', full_name: null }
+        profiles: profileLookup.get(business.owner_id) || { email: '', full_name: null }
       }))
     } else {
       businesses = []

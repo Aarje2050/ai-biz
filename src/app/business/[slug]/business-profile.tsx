@@ -70,7 +70,7 @@ interface BusinessProfileProps {
 
 const navigation = [
     { id: 'overview', label: 'Overview', href: '#overview' },
-    { id: 'services', label: 'Services', href: '#services' },  // Add this line
+    { id: 'reviews', label: 'Reviews', href: '#reviews' },  // Add this line
     { id: 'gallery', label: 'Gallery', href: '#gallery' },
     { id: 'hours', label: 'Hours', href: '#hours' },
     { id: 'contact', label: 'Contact', href: '#contact' },
@@ -477,16 +477,6 @@ useEffect(() => {
                 </CardContent>
               </Card>
 
-              {/* Reviews Section */}
-<section 
-  id="reviews" 
-  ref={(el) => { sectionsRef.current.reviews = el }}
-  className="py-12 bg-white"
->
-  <div className="container max-w-7xl mx-auto px-4">
-    <BusinessReviewsSection business={business} />
-  </div>
-</section>
 
               {/* Map Placeholder */}
               {fullAddress && (
@@ -511,6 +501,18 @@ useEffect(() => {
           </div>
         </div>
       </section>
+      
+              {/* Reviews Section */}
+
+      <section 
+  id="reviews" 
+  ref={(el) => { sectionsRef.current.reviews = el }}
+  className="py-12 bg-white"
+>
+  <div className="container max-w-7xl mx-auto px-4">
+    <BusinessReviewsSection business={business} />
+  </div>
+</section>
 
       {/* Add this floating chat widget just before the closing div of your main component */}
 {/* Floating AI Chat Widget */}

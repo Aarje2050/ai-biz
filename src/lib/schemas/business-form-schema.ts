@@ -219,55 +219,60 @@ export const validateBusinessForm = (data: EnhancedBusinessFormData, businessTyp
   return schema.safeParse(data)
 }
 
-// Transform form data to business creation format
+// Check and fix the transformFormToBusinessData function in business-form-schema.ts
+// Replace the existing function with this corrected version:
+
 export const transformFormToBusinessData = (formData: EnhancedBusinessFormData) => {
-    const {
-      logoFile,
-      images,
-      mondayHours,
-      tuesdayHours,
-      wednesdayHours,
-      thursdayHours,
-      fridayHours,
-      saturdayHours,
-      sundayHours,
-      whatsapp_enabled,
-      facebook,
-      instagram,
-      twitter,
-      linkedin,
-      youtube,
-      zipCode,
-      ...rest
-    } = formData
-  
-    // Change this: business_hours to hours
-    const hours = {
-      monday: mondayHours || null,
-      tuesday: tuesdayHours || null,
-      wednesday: wednesdayHours || null,
-      thursday: thursdayHours || null,
-      friday: fridayHours || null,
-      saturday: saturdayHours || null,
-      sunday: sundayHours || null,
-    }
-  
-    // Transform social media links
-    const social_media = {
-      facebook: facebook || null,
-      instagram: instagram || null,
-      twitter: twitter || null,
-      linkedin: linkedin || null,
-      youtube: youtube || null,
-    }
-  
-    return {
-      ...rest,
-      hours, // Change this from business_hours to hours
-      social_media,
-      postal_code: formData.postal_code || zipCode || null,
-      whatsapp_enabled: whatsapp_enabled || false,
-    }
+  const {
+    logoFile,
+    images,
+    mondayHours,
+    tuesdayHours,
+    wednesdayHours,
+    thursdayHours,
+    fridayHours,
+    saturdayHours,
+    sundayHours,
+    whatsapp_enabled,
+    facebook,
+    instagram,
+    twitter,
+    linkedin,
+    youtube,
+    zipCode,
+    ...rest
+  } = formData
+
+  // Build hours object
+  const hours = {
+    monday: mondayHours || null,
+    tuesday: tuesdayHours || null,
+    wednesday: wednesdayHours || null,
+    thursday: thursdayHours || null,
+    friday: fridayHours || null,
+    saturday: saturdayHours || null,
+    sunday: sundayHours || null,
   }
+
+  // Build social media object
+  const social_media = {
+    facebook: facebook || null,
+    instagram: instagram || null,
+    twitter: twitter || null,
+    linkedin: linkedin || null,
+    youtube: youtube || null,
+  }
+
+  // Return data with correct field names for database
+  return {
+    ...rest,
+    hours, // Database expects 'hours', not 'business_hours'
+    social_media,
+    postal_code: formData.postal_code || zipCode || null,
+    whatsapp_enabled: whatsapp_enabled || false,
+    // Remove any potential user_id field - we'll add owner_id in the form submission
+    // Don't include owner_id here as it's added in the submission logic
+  }
+}
 
 export default enhancedBusinessSchema

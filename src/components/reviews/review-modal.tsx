@@ -1,8 +1,8 @@
 /**
  * ================================================================
  * FILE: /src/components/reviews/review-modal.tsx
- * PURPOSE: Modal component for writing/editing reviews
- * STATUS: ✅ Complete
+ * PURPOSE: Fix success handling and refresh
+ * STATUS: ✅ Fixed
  * ================================================================
  */
 
@@ -47,16 +47,26 @@ export function ReviewModal({
 
       if (review) {
         toast({
-          title: 'Success',
+          title: 'Success!',
           description: existingReview 
             ? 'Review updated successfully!'
             : 'Review submitted successfully!',
         });
+        
+        // Call onSuccess callback to refresh the list
         onSuccess?.(review);
         onClose();
+        
+        // Force page refresh to show changes
+        window.location.reload();
       }
     } catch (error) {
       console.error('Error submitting review:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to submit review. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 

@@ -1,15 +1,15 @@
 /**
  * ================================================================
  * FILE: /src/components/reviews/review-form.tsx
- * PURPOSE: Complete form component for creating/editing reviews
- * STATUS: ✅ Complete
+ * PURPOSE: SIMPLIFIED form component for creating/editing reviews
+ * STATUS: ✅ Complete - Simplified Version
  * ================================================================
  */
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Star, Upload, X, Calendar, DollarSign, Tag, Image as ImageIcon } from 'lucide-react';
+import { Star, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { createReviewSchema, updateReviewSchema, CreateReviewFormData, UpdateReviewFormData } from '@/lib/schemas/review-schema';
 import { Review } from '@/types/reviews';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
 interface ReviewFormProps {
@@ -43,8 +42,6 @@ export function ReviewForm({
   const [rating, setRating] = useState(existingReview?.rating || 0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [images, setImages] = useState<string[]>(existingReview?.images || []);
-  const [tags, setTags] = useState<string[]>(existingReview?.tags || []);
-  const [newTag, setNewTag] = useState('');
 
   const schema = isEditing ? updateReviewSchema : createReviewSchema;
   
@@ -53,7 +50,6 @@ export function ReviewForm({
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
     reset
   } = useForm<CreateReviewFormData | UpdateReviewFormData>({
     resolver: zodResolver(schema),
@@ -61,22 +57,12 @@ export function ReviewForm({
       rating: existingReview.rating,
       title: existingReview.title || '',
       content: existingReview.content,
-      visit_date: existingReview.visit_date || '',
-      service_type: existingReview.service_type || '',
-      spend_amount: existingReview.spend_amount || 0,
-      spend_currency: existingReview.spend_currency || 'INR',
-      tags: existingReview.tags || [],
       images: existingReview.images || []
     } : {
       business_id: businessId,
       rating: 0,
       title: '',
       content: '',
-      visit_date: '',
-      service_type: '',
-      spend_amount: 0,
-      spend_currency: 'INR',
-      tags: [],
       images: []
     }
   });
@@ -85,11 +71,6 @@ export function ReviewForm({
   useEffect(() => {
     setValue('rating', rating);
   }, [rating, setValue]);
-
-  // Update form when tags change
-  useEffect(() => {
-    setValue('tags', tags);
-  }, [tags, setValue]);
 
   // Update form when images change
   useEffect(() => {
@@ -107,7 +88,7 @@ export function ReviewForm({
     // In a real implementation, you'd upload these to a storage service
     // For now, we'll simulate with placeholder URLs
     Array.from(files).forEach((file, index) => {
-      if (images.length >= 5) return;
+      if (images.length >= 3) return; // Limit to 3 images
       
       // Create a preview URL for the uploaded file
       const reader = new FileReader();
@@ -128,37 +109,17 @@ export function ReviewForm({
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const addTag = () => {
-    if (!newTag.trim() || tags.length >= 10) return;
-    
-    const tagToAdd = newTag.trim().toLowerCase();
-    if (!tags.includes(tagToAdd)) {
-      setTags(prev => [...prev, tagToAdd]);
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(prev => prev.filter(tag => tag !== tagToRemove));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTag();
-    }
-  };
-
   const onSubmitForm = async (data: CreateReviewFormData | UpdateReviewFormData) => {
     try {
+      console.log('Submitting review data:', data); // Debug log
       await onSubmit(data);
       if (!isEditing) {
         reset();
         setRating(0);
         setImages([]);
-        setTags([]);
       }
     } catch (error) {
+      console.error('Review submission error:', error); // Debug log
       toast({
         title: 'Error',
         description: 'Failed to submit review. Please try again.',
@@ -223,7 +184,7 @@ export function ReviewForm({
 
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Review Title</Label>
+            <Label htmlFor="title">Review Title (Optional)</Label>
             <Input
               id="title"
               placeholder="Summarize your experience..."
@@ -250,12 +211,12 @@ export function ReviewForm({
             )}
           </div>
 
-          {/* Images */}
+          {/* Images - Optional and limited */}
           <div className="space-y-3">
-            <Label>Photos (Optional)</Label>
+            <Label>Photos (Optional - Max 3)</Label>
             <div className="space-y-3">
               {images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {images.map((image, index) => (
                     <div key={index} className="relative">
                       <img
@@ -275,7 +236,7 @@ export function ReviewForm({
                 </div>
               )}
               
-              {images.length < 5 && (
+              {images.length < 3 && (
                 <div>
                   <input
                     type="file"
@@ -292,103 +253,13 @@ export function ReviewForm({
                     <div className="text-center">
                       <ImageIcon className="w-6 h-6 mx-auto text-gray-400" />
                       <span className="text-sm text-gray-600 mt-1">
-                        Add Photos ({images.length}/5)
+                        Add Photos ({images.length}/3)
                       </span>
                     </div>
                   </Label>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Additional Details */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="visit_date">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                Visit Date
-              </Label>
-              <Input
-                id="visit_date"
-                type="date"
-                {...register('visit_date')}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="service_type">Service Type</Label>
-              <Input
-                id="service_type"
-                placeholder="e.g., Dine-in, Takeout, Delivery"
-                {...register('service_type')}
-              />
-            </div>
-          </div>
-
-          {/* Spend Amount */}
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="spend_amount">
-                <DollarSign className="w-4 h-4 inline mr-1" />
-                Amount Spent (Optional)
-              </Label>
-              <Input
-                id="spend_amount"
-                type="number"
-                min="0"
-                placeholder="0"
-                {...register('spend_amount', { valueAsNumber: true })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="spend_currency">Currency</Label>
-              <select
-                id="spend_currency"
-                {...register('spend_currency')}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                <option value="INR">INR</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="space-y-3">
-            <Label>
-              <Tag className="w-4 h-4 inline mr-1" />
-              Tags (Optional)
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="ml-1 hover:text-red-500"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-            {tags.length < 10 && (
-              <div className="flex gap-2">
-                <Input
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Add a tag..."
-                  className="flex-1"
-                  onKeyPress={handleKeyPress}
-                />
-                <Button type="button" onClick={addTag} variant="outline">
-                  Add
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Buttons */}
@@ -410,6 +281,7 @@ export function ReviewForm({
                 variant="outline"
                 onClick={onCancel}
                 disabled={isLoading}
+                className="flex-1 sm:flex-none"
               >
                 Cancel
               </Button>
